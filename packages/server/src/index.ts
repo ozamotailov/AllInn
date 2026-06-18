@@ -1,22 +1,31 @@
-// Server entrypoint: HTTP (health + future REST) + WebSocket gateway.
+// Server entrypoint: HTTP (auth + health) + WebSocket gateway.
 
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import { loadEnv } from './env.js';
+import { registerRoutes } from './http/routes.js';
 import { createGateway } from './ws/gateway.js';
 
-const PORT = Number(process.env.PORT ?? 8080);
-const BOT_TOKEN = process.env.BOT_TOKEN ?? '';
-
+const env = loadEnv();
 const app = Fastify({ logger: true });
-
-app.get('/health', async () => ({ ok: true }));
 
 const start = async () => {
   try {
-    await app.listen({ port: PORT, host: '0.0.0.0' });
-    createGateway(app.server, { botToken: BOT_TOKEN });
-    app.log.info(`WebSocket gateway listening on ws://localhost:${PORT}/ws`);
-    if (!BOT_TOKEN) {
-      app.log.warn('BOT_TOKEN is empty — initData validation will reject all connections.');
+    // Dev: the Mini App is served from a different origin (Vite/tunnel).
+    await app.register(cors, { origin: true });
+    registerRoutes(app, env);
+
+    await app.listen({ port: env.port, host: '0.0.0.0' });
+    createGateway(app.server, { botToken: env.botToken });
+
+    if (!env.sessionSecret) {
+      app.log.warn('SESSION_SECRET is empty — set it before any real use.');
+    }
+    if (!env.botToken) {
+      app.log.warn('BOT_TOKEN is empty — /auth will reject all Telegram logins.');
+    }
+    if (env.allowDevAuth) {
+      app.log.warn('ALLOW_DEV_AUTH=true — POST /auth/dev is OPEN. Local development only!');
     }
   } catch (err) {
     app.log.error(err);

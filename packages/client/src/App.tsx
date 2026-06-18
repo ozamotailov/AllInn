@@ -1,38 +1,39 @@
-import { getStartParam, isInsideTelegram } from './telegram.js';
+import { useEffect } from 'react';
+import { useSession } from './session.js';
+import { getStartParam } from './telegram.js';
 
-// MVP shell. Build-order step 1–2 (ARCHITECTURE.md §11):
-//   - if a room code arrived via ?startapp=, show the "join room" screen
-//   - otherwise show the "create room" screen (host sets blinds/stack/etc.)
+// Step 1 (ARCHITECTURE.md §11): authenticate via initData and greet the user.
+// Room create/join (using the startapp room code below) comes in step 2.
 
 export function App() {
+  const { status, user, error, login } = useSession();
   const roomCode = getStartParam();
 
-  if (!isInsideTelegram()) {
-    return (
-      <main className="screen">
-        <h1>🃏 Telegram Poker</h1>
-        <p className="muted">Open this app from inside Telegram to play.</p>
-      </main>
-    );
-  }
+  useEffect(() => {
+    void login();
+  }, [login]);
 
   return (
     <main className="screen">
-      <h1>🃏 Telegram Poker</h1>
-      {roomCode ? (
-        <section>
-          <p>Joining room</p>
-          <code className="room-code">{roomCode}</code>
-          {/* TODO(step 2): connect WS, show lobby + seating. */}
-        </section>
-      ) : (
-        <section>
-          <p>Create a table and invite friends.</p>
-          {/* TODO(step 2): room-config form (blinds, starting stack, seats, timer). */}
-          <button className="primary" disabled>
-            Create room (TODO)
-          </button>
-        </section>
+      <h1>🃏 AllInn</h1>
+
+      {status === 'loading' && <p className="muted">Signing in…</p>}
+
+      {status === 'authed' && user && (
+        <>
+          <p>
+            Привет, <strong>{user.displayName}</strong> 👋
+          </p>
+          {roomCode && (
+            <p className="muted">
+              Invite room: <code className="room-code">{roomCode}</code> (join lands in step 2)
+            </p>
+          )}
+        </>
+      )}
+
+      {status === 'error' && (
+        <p className="muted">Sign-in failed: {error}</p>
       )}
     </main>
   );
