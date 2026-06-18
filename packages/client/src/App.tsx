@@ -5,6 +5,7 @@ import { getStartParam } from './telegram.js';
 import { CreateRoom } from './CreateRoom.js';
 import { Lobby } from './Lobby.js';
 import { Table } from './Table.js';
+import { Ledger } from './Ledger.js';
 
 // Step 2 (ARCHITECTURE.md §11): authenticate → create a room (or join via the
 // startapp deep link) → connect WS → lobby with live seating.
@@ -45,7 +46,8 @@ function Shell({ children }: { children: ReactNode }) {
 function RoomFlow({ token, userId }: { token: string; userId: string }) {
   const [code, setCode] = useState<string | undefined>(getStartParam());
   const [inviteLink, setInviteLink] = useState<string>();
-  const { conn, mode, room, table, result, error, connect, sit, leave, act } = useRoom();
+  const { conn, mode, room, table, result, ledger, error, connect, sit, leave, act, rebuy, requestLedger, clearLedger } =
+    useRoom();
 
   useEffect(() => {
     if (code) connect(code, token);
@@ -63,11 +65,40 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
     );
   }
   if (conn === 'error') return <p className="error">Room error: {error}</p>;
+
+  const buyIn = room?.config.startingStack ?? 0;
+  const overlay = ledger ? <Ledger ledger={ledger} onClose={clearLedger} /> : null;
+
   if (mode === 'table' && table) {
-    return <Table state={table} result={result} onAct={act} onLeave={leave} />;
+    return (
+      <>
+        <Table
+          state={table}
+          result={result}
+          onAct={act}
+          onLeave={leave}
+          onSettle={requestLedger}
+          onRebuy={() => rebuy(buyIn)}
+        />
+        {overlay}
+      </>
+    );
   }
   if (room) {
-    return <Lobby state={room} meId={userId} inviteLink={inviteLink} onSit={sit} onLeave={leave} />;
+    return (
+      <>
+        <Lobby
+          state={room}
+          meId={userId}
+          inviteLink={inviteLink}
+          onSit={sit}
+          onLeave={leave}
+          onSettle={requestLedger}
+          onRebuy={() => rebuy(buyIn)}
+        />
+        {overlay}
+      </>
+    );
   }
   return <p className="muted">Joining room {code}…</p>;
 }

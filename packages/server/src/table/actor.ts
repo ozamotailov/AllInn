@@ -17,8 +17,9 @@ import type {
   PlayerActionIntent,
   Card,
   ShowdownEntry,
+  Settlement,
 } from '@allinn/shared';
-import { HandMachine } from '@allinn/shared';
+import { HandMachine, computeLedger, simplifyDebts } from '@allinn/shared';
 import { cryptoRandomInt } from '../rng.js';
 
 const INTERMISSION_MS = 4000;
@@ -42,6 +43,8 @@ export class TableActor {
   private intermission?: ReturnType<typeof setTimeout>;
   private actionTimer?: ReturnType<typeof setTimeout>;
   private actionDeadline?: number;
+  /** Final net of players who left the table mid-session, kept for the ledger. */
+  private readonly departed: Array<{ userId: string; displayName: string; buyIn: number; stack: number }> = [];
 
   constructor(
     readonly roomCode: string,
@@ -51,6 +54,7 @@ export class TableActor {
     this.seats = Array.from({ length: config.maxPlayers }, (_, i): SeatState => ({
       seat: i,
       stack: 0,
+      buyIn: 0,
       status: 'empty',
     }));
   }
@@ -77,6 +81,7 @@ export class TableActor {
     target.userId = userId;
     target.displayName = displayName;
     target.stack = this.config.startingStack;
+    target.buyIn = this.config.startingStack;
     target.status = 'seated';
     this.broadcast();
     this.maybeStartHand();
@@ -95,11 +100,75 @@ export class TableActor {
     }
     const seat = this.seats.find((s) => s.userId === userId);
     if (!seat) return;
+    // Record their final net so the session ledger still balances after they go.
+    if (seat.buyIn > 0) {
+      this.departed.push({
+        userId: seat.userId as string,
+        displayName: seat.displayName as string,
+        buyIn: seat.buyIn,
+        stack: seat.stack,
+      });
+    }
     seat.userId = undefined;
     seat.displayName = undefined;
     seat.stack = 0;
+    seat.buyIn = 0;
     seat.status = 'empty';
     this.broadcast();
+  }
+
+  rebuy(userId: string, amount: number): void {
+    const conn = this.connections.get(userId);
+    if (this.handActive()) {
+      conn?.send({ t: 'error', code: 'rebuy', message: 'Wait until the hand ends' });
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      conn?.send({ t: 'error', code: 'rebuy', message: 'Invalid amount' });
+      return;
+    }
+    const seat = this.seats.find((s) => s.userId === userId);
+    if (!seat || seat.status !== 'seated') {
+      conn?.send({ t: 'error', code: 'rebuy', message: 'Not seated' });
+      return;
+    }
+    seat.stack += amount;
+    seat.buyIn += amount;
+    this.broadcast();
+    this.maybeStartHand();
+  }
+
+  /** Compute and broadcast the session ledger ("who pays whom"). */
+  sendLedger(): void {
+    const entries = [
+      ...this.seats
+        .filter((s) => s.status === 'seated' && s.buyIn > 0)
+        .map((s) => ({
+          userId: s.userId as string,
+          displayName: s.displayName as string,
+          totalBuyIn: s.buyIn,
+          finalStack: s.stack,
+        })),
+      ...this.departed.map((d) => ({
+        userId: d.userId,
+        displayName: d.displayName,
+        totalBuyIn: d.buyIn,
+        finalStack: d.stack,
+      })),
+    ];
+    const rows = computeLedger(entries);
+    let settlements: Settlement[];
+    try {
+      settlements = simplifyDebts(rows);
+    } catch {
+      settlements = []; // unbalanced (shouldn't happen) — show rows without transfers
+    }
+    const msg: ServerMessage = { t: 'ledger', rows, settlements };
+    for (const conn of this.connections.values()) conn.send(msg);
+  }
+
+  private handActive(): boolean {
+    return this.phase === 'playing' && !!this.hand && !this.hand.isComplete();
   }
 
   // ── Gameplay ─────────────────────────────────────────────────────────────────

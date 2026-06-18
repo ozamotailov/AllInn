@@ -64,10 +64,14 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
           return actor.leave(userId);
         case 'action':
           return actor.handleAction(userId, msg.intent);
+        case 'rebuy':
+          return actor.rebuy(userId, msg.amount);
+        case 'ledger':
+          return actor.sendLedger();
         case 'ping':
           return send(ws, { t: 'pong' });
         default:
-          // join is handled at connection; rebuy lands in a later step.
+          // join is handled at connection.
           return send(ws, { t: 'error', code: 'unimplemented', message: `TODO: ${msg.t}` });
       }
     });

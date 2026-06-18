@@ -6,6 +6,8 @@ import type {
   Card,
   ShowdownEntry,
   PlayerActionIntent,
+  LedgerRow,
+  Settlement,
 } from '@allinn/shared';
 import { connectRoom, type RoomSocket } from './ws.js';
 
@@ -16,18 +18,27 @@ export interface HandResultView {
   showdown: ShowdownEntry[];
 }
 
+export interface LedgerView {
+  rows: LedgerRow[];
+  settlements: Settlement[];
+}
+
 interface RoomStore {
   conn: ConnState;
   mode: 'lobby' | 'table';
   room?: RoomPublicState;
   table?: PersonalTableState;
   result?: HandResultView;
+  ledger?: LedgerView;
   error?: string;
   socket?: RoomSocket;
   connect: (roomCode: string, token: string) => void;
   sit: (seat: number) => void;
   leave: () => void;
   act: (intent: PlayerActionIntent) => void;
+  rebuy: (amount: number) => void;
+  requestLedger: () => void;
+  clearLedger: () => void;
   disconnect: () => void;
 }
 
@@ -54,6 +65,9 @@ export const useRoom = create<RoomStore>((set, get) => ({
         case 'handResult':
           set({ result: { board: msg.board, showdown: msg.showdown } });
           break;
+        case 'ledger':
+          set({ ledger: { rows: msg.rows, settlements: msg.settlements } });
+          break;
         case 'error':
           if (msg.code === 'auth' || msg.code === 'no_room') set({ conn: 'error', error: msg.message });
           else set({ error: msg.message });
@@ -67,6 +81,9 @@ export const useRoom = create<RoomStore>((set, get) => ({
   sit: (seat) => get().socket?.send({ t: 'sit', seat, buyIn: 0 }),
   leave: () => get().socket?.send({ t: 'leave' }),
   act: (intent) => get().socket?.send({ t: 'action', intent }),
+  rebuy: (amount) => get().socket?.send({ t: 'rebuy', amount }),
+  requestLedger: () => get().socket?.send({ t: 'ledger' }),
+  clearLedger: () => set({ ledger: undefined }),
   disconnect: () => {
     get().socket?.close();
     set({ socket: undefined, room: undefined, table: undefined, result: undefined, conn: 'idle', mode: 'lobby' });

@@ -20,11 +20,15 @@ export function Table({
   result,
   onAct,
   onLeave,
+  onSettle,
+  onRebuy,
 }: {
   state: PersonalTableState;
   result?: HandResultView;
   onAct: (intent: PlayerActionIntent) => void;
   onLeave: () => void;
+  onSettle: () => void;
+  onRebuy: () => void;
 }) {
   const potTotal = state.pots.reduce((a, p) => a + p.amount, 0);
   const lm = state.yourLegalMoves;
@@ -102,9 +106,17 @@ export function Table({
         />
       )}
 
-      <button className="ghost small" onClick={onLeave}>
-        Leave table
-      </button>
+      <div className="toolbar">
+        <button className="ghost" onClick={onSettle}>
+          Settle up
+        </button>
+        <button className="ghost" onClick={onRebuy}>
+          Rebuy
+        </button>
+        <button className="ghost" onClick={onLeave}>
+          Leave
+        </button>
+      </div>
     </section>
   );
 }

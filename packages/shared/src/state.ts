@@ -77,8 +77,10 @@ export interface SeatState {
   seat: number;
   userId?: string;
   displayName?: string;
-  /** Chips at the seat (= buy-in until gameplay exists). */
+  /** Current chips at the seat. */
   stack: number;
+  /** Total chips bought in (initial sit-in + rebuys) — drives the ledger. */
+  buyIn: number;
   status: LobbySeatStatus;
 }
 

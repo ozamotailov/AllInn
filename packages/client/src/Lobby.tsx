@@ -6,12 +6,16 @@ export function Lobby({
   inviteLink,
   onSit,
   onLeave,
+  onSettle,
+  onRebuy,
 }: {
   state: RoomPublicState;
   meId: string;
   inviteLink?: string;
   onSit: (seat: number) => void;
   onLeave: () => void;
+  onSettle: () => void;
+  onRebuy: () => void;
 }) {
   const { config } = state;
   const seated = state.seats.some((s) => s.userId === meId);
@@ -48,11 +52,22 @@ export function Lobby({
       </ul>
 
       <p className="muted small">{state.presentUserIds.length} online</p>
-      {seated && (
-        <button className="ghost" onClick={onLeave}>
-          Leave seat
+
+      <div className="toolbar">
+        <button className="ghost" onClick={onSettle}>
+          Settle up
         </button>
-      )}
+        {seated && (
+          <>
+            <button className="ghost" onClick={onRebuy}>
+              Rebuy +{config.startingStack}
+            </button>
+            <button className="ghost" onClick={onLeave}>
+              Leave seat
+            </button>
+          </>
+        )}
+      </div>
     </section>
   );
 }
