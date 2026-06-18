@@ -58,11 +58,15 @@ function card(cx, cy, angle, path, color) {
   const cw = 96, ch = 134;
   const pip = (s, tx, ty) =>
     `<g transform="translate(${tx},${ty}) scale(${s})"><path d="${path}" fill="${color}"/></g>`;
+  // Rank index "A" + a small suit pip in the corner (and mirrored to the opposite corner).
+  const corner =
+    letter('A', -cw / 2 + 9, -ch / 2 + 9, 18, 23, 5, color) + pip(0.16, -cw / 2 + 10, -ch / 2 + 35);
   return `<g transform="translate(${cx},${cy}) rotate(${angle})">
     <rect x="${-cw / 2 + 4}" y="${-ch / 2 + 7}" width="${cw}" height="${ch}" rx="12" fill="#000000" fill-opacity="0.22"/>
     <rect x="${-cw / 2}" y="${-ch / 2}" width="${cw}" height="${ch}" rx="12" fill="#fbfbf7" stroke="#d8d8cf"/>
-    ${pip(0.4, -cw / 2 + 11, -ch / 2 + 10)}
-    ${pip(1.5, -38, -52)}
+    ${corner}
+    <g transform="rotate(180)">${corner}</g>
+    ${pip(1.45, -36, -50)}
   </g>`;
 }
 
