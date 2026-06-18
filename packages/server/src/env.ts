@@ -10,6 +10,8 @@ export interface Env {
   botUsername: string;
   /** Direct Mini App short name — used to build invite links. */
   appShortName: string;
+  /** SQLite file path for room persistence. */
+  dbPath: string;
 }
 
 export function loadEnv(): Env {
@@ -20,6 +22,7 @@ export function loadEnv(): Env {
     allowDevAuth: process.env.ALLOW_DEV_AUTH === 'true',
     botUsername: process.env.BOT_USERNAME ?? '',
     appShortName: process.env.APP_SHORT_NAME ?? '',
+    dbPath: process.env.DB_PATH ?? 'allinn.db',
   };
 }
 

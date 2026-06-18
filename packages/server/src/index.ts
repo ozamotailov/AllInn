@@ -6,6 +6,7 @@ import { loadEnv } from './env.js';
 import { registerRoutes } from './http/routes.js';
 import { createGateway } from './ws/gateway.js';
 import { RoomRegistry } from './rooms/registry.js';
+import { SqliteRoomStore } from './store/sqlite.js';
 
 // Load packages/server/.env (if present) before reading config. Node 20.12+.
 try {
@@ -16,7 +17,7 @@ try {
 
 const env = loadEnv();
 const app = Fastify({ logger: true });
-const registry = new RoomRegistry();
+const registry = new RoomRegistry(new SqliteRoomStore(env.dbPath));
 
 const start = async () => {
   try {

@@ -21,6 +21,7 @@ import type {
 } from '@allinn/shared';
 import { HandMachine, computeLedger, simplifyDebts } from '@allinn/shared';
 import { cryptoRandomInt } from '../rng.js';
+import type { RoomSnapshot, DepartedEntry } from '../store/types.js';
 
 const INTERMISSION_MS = 4000;
 
@@ -44,19 +45,44 @@ export class TableActor {
   private actionTimer?: ReturnType<typeof setTimeout>;
   private actionDeadline?: number;
   /** Final net of players who left the table mid-session, kept for the ledger. */
-  private readonly departed: Array<{ userId: string; displayName: string; buyIn: number; stack: number }> = [];
+  private departed: DepartedEntry[] = [];
+  /** Set by the registry to persist between-hand state after each change. */
+  onPersist?: () => void;
 
   constructor(
     readonly roomCode: string,
     private readonly config: RoomConfig,
     private readonly hostId: string,
+    restore?: Pick<RoomSnapshot, 'seats' | 'departed' | 'buttonSeat'>,
   ) {
-    this.seats = Array.from({ length: config.maxPlayers }, (_, i): SeatState => ({
-      seat: i,
-      stack: 0,
-      buyIn: 0,
-      status: 'empty',
-    }));
+    if (restore) {
+      this.seats = restore.seats.map((s) => ({ ...s }));
+      this.departed = restore.departed.map((d) => ({ ...d }));
+      this.buttonSeat = restore.buttonSeat;
+    } else {
+      this.seats = Array.from({ length: config.maxPlayers }, (_, i): SeatState => ({
+        seat: i,
+        stack: 0,
+        buyIn: 0,
+        status: 'empty',
+      }));
+    }
+  }
+
+  /** Between-hand state for persistence. */
+  toSnapshot(): RoomSnapshot {
+    return {
+      code: this.roomCode,
+      hostId: this.hostId,
+      config: this.config,
+      seats: this.seats.map((s) => ({ ...s })),
+      departed: this.departed.map((d) => ({ ...d })),
+      buttonSeat: this.buttonSeat,
+    };
+  }
+
+  private persist(): void {
+    this.onPersist?.();
   }
 
   // ── Presence / seating ───────────────────────────────────────────────────────
@@ -64,6 +90,8 @@ export class TableActor {
   attach(conn: Connection): void {
     this.connections.set(conn.userId, conn);
     this.sendStateTo(conn);
+    // A reconnecting player may complete the table (e.g. after a restart).
+    this.maybeStartHand();
   }
 
   detach(userId: string): void {
@@ -84,6 +112,7 @@ export class TableActor {
     target.buyIn = this.config.startingStack;
     target.status = 'seated';
     this.broadcast();
+    this.persist();
     this.maybeStartHand();
     return { ok: true };
   }
@@ -115,6 +144,7 @@ export class TableActor {
     seat.buyIn = 0;
     seat.status = 'empty';
     this.broadcast();
+    this.persist();
   }
 
   rebuy(userId: string, amount: number): void {
@@ -135,6 +165,7 @@ export class TableActor {
     seat.stack += amount;
     seat.buyIn += amount;
     this.broadcast();
+    this.persist();
     this.maybeStartHand();
   }
 
@@ -270,6 +301,7 @@ export class TableActor {
       const seat = this.seats.find((s) => s.seat === fs.seat);
       if (seat) seat.stack = fs.stack;
     }
+    this.persist();
     const result = this.hand.result();
     this.broadcast(); // final hand state (showdown board + stacks)
     this.broadcastResult(result.board, result.showdown);

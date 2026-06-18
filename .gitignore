@@ -9,5 +9,10 @@ coverage/
 .DS_Store
 *.log
 
+# SQLite persistence files
+*.db
+*.db-wal
+*.db-shm
+
 # Local Claude Code settings (personal, not shared)
 .claude/settings.local.json
