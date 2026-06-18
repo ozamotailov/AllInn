@@ -6,6 +6,10 @@ export interface Env {
   sessionSecret: string;
   /** Dev-only: enables POST /auth/dev (no Telegram). MUST be false in prod. */
   allowDevAuth: boolean;
+  /** Bot username (no @) — used to build invite links. */
+  botUsername: string;
+  /** Direct Mini App short name — used to build invite links. */
+  appShortName: string;
 }
 
 export function loadEnv(): Env {
@@ -14,5 +18,13 @@ export function loadEnv(): Env {
     botToken: process.env.BOT_TOKEN ?? '',
     sessionSecret: process.env.SESSION_SECRET ?? '',
     allowDevAuth: process.env.ALLOW_DEV_AUTH === 'true',
+    botUsername: process.env.BOT_USERNAME ?? '',
+    appShortName: process.env.APP_SHORT_NAME ?? '',
   };
+}
+
+/** Build a Direct Mini App invite link, or '' if bot identity isn't configured. */
+export function inviteLinkFor(code: string, env: Env): string {
+  if (!env.botUsername || !env.appShortName) return '';
+  return `https://t.me/${env.botUsername}/${env.appShortName}?startapp=${code}`;
 }

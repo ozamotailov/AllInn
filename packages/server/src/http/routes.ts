@@ -1,11 +1,22 @@
-// HTTP routes. Step 1 (ARCHITECTURE.md §11): authenticate via initData and
-// issue a session JWT; expose /me to prove the token verifies.
+// HTTP routes.
+//   Step 1: authenticate via initData → session JWT; /me verifies a token.
+//   Step 2: create rooms (auth required) and look up room info.
 
 import type { FastifyInstance } from 'fastify';
-import type { AuthRequest, AuthResponse, SessionUser } from '@allinn/shared';
+import {
+  validateConfig,
+  type AuthRequest,
+  type AuthResponse,
+  type SessionUser,
+  type CreateRoomRequest,
+  type CreateRoomResponse,
+  type RoomInfo,
+} from '@allinn/shared';
 import { validateInitData, InitDataError, type TelegramUser } from '../auth/initData.js';
-import { signSession, verifySession, SessionError } from '../auth/jwt.js';
-import type { Env } from '../env.js';
+import { signSession, SessionError } from '../auth/jwt.js';
+import { requireSession } from '../auth/bearer.js';
+import { type Env, inviteLinkFor } from '../env.js';
+import type { RoomRegistry } from '../rooms/registry.js';
 
 function displayNameOf(u: TelegramUser): string {
   const full = [u.first_name, u.last_name].filter(Boolean).join(' ');
@@ -16,10 +27,10 @@ function issue(user: SessionUser, secret: string): AuthResponse {
   return { token: signSession({ sub: user.id, name: user.displayName }, secret), user };
 }
 
-export function registerRoutes(app: FastifyInstance, env: Env): void {
+export function registerRoutes(app: FastifyInstance, env: Env, registry: RoomRegistry): void {
   app.get('/health', async () => ({ ok: true }));
 
-  // Telegram login: validate initData → session JWT.
+  // ── Auth (step 1) ──────────────────────────────────────────────────────────
   app.post('/auth', async (req, reply) => {
     const { initData = '' } = (req.body ?? {}) as Partial<AuthRequest>;
     try {
@@ -32,26 +43,61 @@ export function registerRoutes(app: FastifyInstance, env: Env): void {
     }
   });
 
-  // Dev-only bypass so the client can run in a plain browser during development.
   if (env.allowDevAuth) {
-    app.post('/auth/dev', async () =>
-      issue({ id: 'dev-1', displayName: 'Dev User' }, env.sessionSecret),
-    );
+    app.post('/auth/dev', async (req) => {
+      // Optional ?id=&name= so dev sessions can simulate distinct users.
+      const q = req.query as { id?: string; name?: string };
+      const id = q.id ?? 'dev-1';
+      return issue({ id, displayName: q.name ?? `Dev ${id}` }, env.sessionSecret);
+    });
   }
 
-  // Verify a session token (used by the client to confirm auth / by future routes).
   app.get('/me', async (req, reply) => {
-    const header = req.headers.authorization;
-    if (!header?.startsWith('Bearer ')) {
-      return reply.code(401).send({ error: 'Missing bearer token' });
-    }
     try {
-      const claims = verifySession(header.slice('Bearer '.length), env.sessionSecret);
+      const claims = requireSession(req, env.sessionSecret);
       const user: SessionUser = { id: claims.sub, displayName: claims.name };
       return user;
     } catch (e) {
       if (e instanceof SessionError) return reply.code(401).send({ error: e.message });
       throw e;
     }
+  });
+
+  // ── Rooms (step 2) ─────────────────────────────────────────────────────────
+  app.post('/rooms', async (req, reply) => {
+    let hostId: string;
+    try {
+      hostId = requireSession(req, env.sessionSecret).sub;
+    } catch {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+
+    const { config } = (req.body ?? {}) as Partial<CreateRoomRequest>;
+    if (!config) return reply.code(400).send({ error: 'Missing config' });
+    const errors = validateConfig(config);
+    if (errors.length) return reply.code(400).send({ error: errors.join('; ') });
+
+    const actor = registry.create(config, hostId);
+    const res: CreateRoomResponse = {
+      code: actor.roomCode,
+      inviteLink: inviteLinkFor(actor.roomCode, env),
+      config,
+    };
+    return res;
+  });
+
+  app.get('/rooms/:code', async (req, reply) => {
+    const { code } = req.params as { code: string };
+    const actor = registry.get(code);
+    if (!actor) return reply.code(404).send({ error: 'Room not found' });
+    const s = actor.snapshot();
+    const info: RoomInfo = {
+      code,
+      phase: s.phase,
+      config: s.config,
+      seatsTaken: s.seats.filter((x) => x.status !== 'empty').length,
+      maxPlayers: s.config.maxPlayers,
+    };
+    return info;
   });
 }

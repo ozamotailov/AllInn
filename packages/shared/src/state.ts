@@ -3,6 +3,7 @@
 // PersonalTableState per connection so hole cards never leak.
 
 import type { Card } from './cards.js';
+import type { RoomConfig } from './config.js';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
@@ -52,4 +53,30 @@ export interface PublicTableState {
 export interface PersonalTableState extends PublicTableState {
   yourSeat?: number;
   yourHoleCards?: [Card, Card];
+}
+
+// ── Lobby / room-level state (pre-gameplay; contains no hidden information,
+//    so the same snapshot is broadcast to everyone) ───────────────────────────
+
+export type LobbySeatStatus = 'empty' | 'seated' | 'sitting_out';
+
+export interface SeatState {
+  seat: number;
+  userId?: string;
+  displayName?: string;
+  /** Chips at the seat (= buy-in until gameplay exists). */
+  stack: number;
+  status: LobbySeatStatus;
+}
+
+export type RoomPhase = 'lobby' | 'playing';
+
+export interface RoomPublicState {
+  roomCode: string;
+  phase: RoomPhase;
+  hostId: string;
+  config: RoomConfig;
+  seats: SeatState[];
+  /** userIds currently connected to the room (seated or just watching). */
+  presentUserIds: string[];
 }

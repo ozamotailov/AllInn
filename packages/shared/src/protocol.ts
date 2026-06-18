@@ -2,7 +2,7 @@
 // `t` is the discriminant. Keep this the single source of truth for both ends.
 
 import type { PlayerActionIntent } from './actions.js';
-import type { PersonalTableState } from './state.js';
+import type { PersonalTableState, RoomPublicState } from './state.js';
 import type { Card } from './cards.js';
 import type { LedgerRow, Settlement } from './settlement.js';
 
@@ -25,6 +25,7 @@ export interface ShowdownEntry {
 }
 
 export type ServerMessage =
+  | { t: 'room'; state: RoomPublicState }
   | { t: 'state'; state: PersonalTableState }
   | { t: 'handResult'; board: Card[]; showdown: ShowdownEntry[] }
   | { t: 'ledger'; rows: LedgerRow[]; settlements: Settlement[] }

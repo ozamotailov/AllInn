@@ -1,60 +1,89 @@
-// Table actor — one per active table. Owns authoritative state and SERIALIZES
-// all incoming actions so there is never a race on "who acted first". The WS
-// gateway routes a room's messages here; this is the only writer of table state.
+// Table actor — one per room. Owns authoritative room state and is the only
+// writer of it. JS is single-threaded, so synchronous method calls already
+// serialize actions; a queue can come later if any handler turns async.
 //
-// STATUS: skeleton. Flesh out across build-order steps 3–7 (ARCHITECTURE.md §11):
-//   - seat/stack management + presence (step 3)
-//   - drive HandMachine, broadcast PersonalTableState (step 4–5)
-//   - server-owned action timer (step 6)
-//   - rebuy + end-of-session ledger (step 7)
+// Step 2 scope: lobby + seating + presence. Gameplay (HandMachine, timers,
+// side pots) arrives in steps 4–7 (ARCHITECTURE.md §11).
 
-import crypto from 'node:crypto';
-import {
-  type RoomConfig,
-  type PlayerActionIntent,
-  type PersonalTableState,
-  type RandomInt,
+import type {
+  RoomConfig,
+  RoomPublicState,
+  SeatState,
+  ServerMessage,
 } from '@allinn/shared';
-
-/** CSPRNG-backed uniform int in [0, max) — injected into the shuffle. */
-export const cryptoRandomInt: RandomInt = (max) => crypto.randomInt(max);
 
 export interface Connection {
   userId: string;
   displayName: string;
-  send(state: PersonalTableState): void;
+  send(msg: ServerMessage): void;
 }
+
+export type SitResult = { ok: true } | { ok: false; error: string };
 
 export class TableActor {
   private readonly connections = new Map<string, Connection>();
+  private readonly seats: SeatState[];
 
   constructor(
     readonly roomCode: string,
     private readonly config: RoomConfig,
-  ) {}
+    private readonly hostId: string,
+  ) {
+    this.seats = Array.from({ length: config.maxPlayers }, (_, i): SeatState => ({
+      seat: i,
+      stack: 0,
+      status: 'empty',
+    }));
+  }
 
   attach(conn: Connection): void {
     this.connections.set(conn.userId, conn);
-    // TODO(step 3): mark presence, send current snapshot.
+    this.broadcast();
   }
 
   detach(userId: string): void {
+    // Keep the seat (the player may reconnect); only presence drops.
     this.connections.delete(userId);
-    // TODO(step 6): keep seat, let the action timer continue, sit out on repeated timeout.
+    this.broadcast();
   }
 
-  sit(_userId: string, _seat: number, _buyIn: number): void {
-    // TODO(step 3): seat the player with a buy-in; start a hand when >= 2 are ready.
-    throw new Error('TableActor.sit not implemented yet');
+  sit(userId: string, displayName: string, seat: number): SitResult {
+    if (seat < 0 || seat >= this.seats.length) return { ok: false, error: 'Invalid seat' };
+    if (this.seats.some((s) => s.userId === userId)) return { ok: false, error: 'Already seated' };
+    const target = this.seats[seat];
+    if (target.status !== 'empty') return { ok: false, error: 'Seat taken' };
+
+    target.userId = userId;
+    target.displayName = displayName;
+    target.stack = this.config.startingStack;
+    target.status = 'seated';
+    this.broadcast();
+    return { ok: true };
   }
 
-  /** Enqueue + apply one validated action. Single-threaded by construction. */
-  handleAction(_userId: string, _intent: PlayerActionIntent): void {
-    // TODO(step 4): validate (turn/amount/chips) via HandMachine, then broadcast.
-    throw new Error('TableActor.handleAction not implemented yet');
+  leave(userId: string): void {
+    const seat = this.seats.find((s) => s.userId === userId);
+    if (!seat) return;
+    seat.userId = undefined;
+    seat.displayName = undefined;
+    seat.stack = 0;
+    seat.status = 'empty';
+    this.broadcast();
+  }
+
+  snapshot(): RoomPublicState {
+    return {
+      roomCode: this.roomCode,
+      phase: 'lobby',
+      hostId: this.hostId,
+      config: this.config,
+      seats: this.seats.map((s) => ({ ...s })),
+      presentUserIds: [...this.connections.keys()],
+    };
   }
 
   private broadcast(): void {
-    // TODO: build a PersonalTableState per connection (own hole cards only) and send.
+    const msg: ServerMessage = { t: 'room', state: this.snapshot() };
+    for (const conn of this.connections.values()) conn.send(msg);
   }
 }

@@ -1,11 +1,22 @@
-import type { AuthResponse } from '@allinn/shared';
+import type {
+  AuthResponse,
+  CreateRoomResponse,
+  RoomConfig,
+  RoomInfo,
+} from '@allinn/shared';
 import { API_URL } from './config.js';
 
-async function postJson<T>(path: string, body?: unknown): Promise<T> {
-  const init: RequestInit = { method: 'POST' };
-  if (body !== undefined) {
-    init.headers = { 'Content-Type': 'application/json' };
-    init.body = JSON.stringify(body);
+async function request<T>(
+  method: 'GET' | 'POST',
+  path: string,
+  opts: { body?: unknown; token?: string } = {},
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+  const init: RequestInit = { method, headers };
+  if (opts.body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    init.body = JSON.stringify(opts.body);
   }
   const res = await fetch(`${API_URL}${path}`, init);
   if (!res.ok) {
@@ -17,10 +28,18 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
 
 /** Telegram login: exchange initData for a session token. */
 export function authenticate(initData: string): Promise<AuthResponse> {
-  return postJson<AuthResponse>('/auth', { initData });
+  return request<AuthResponse>('POST', '/auth', { body: { initData } });
 }
 
 /** Dev login (requires ALLOW_DEV_AUTH=true on the server). */
 export function devAuthenticate(): Promise<AuthResponse> {
-  return postJson<AuthResponse>('/auth/dev');
+  return request<AuthResponse>('POST', '/auth/dev');
+}
+
+export function createRoom(config: RoomConfig, token: string): Promise<CreateRoomResponse> {
+  return request<CreateRoomResponse>('POST', '/rooms', { body: { config }, token });
+}
+
+export function getRoomInfo(code: string): Promise<RoomInfo> {
+  return request<RoomInfo>('GET', `/rooms/${encodeURIComponent(code)}`);
 }
