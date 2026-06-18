@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="felt" cx="42%" cy="34%" r="85%">
+      <stop offset="0%" stop-color="#1d7d50"/>
+      <stop offset="60%" stop-color="#115f3b"/>
+      <stop offset="100%" stop-color="#072d1c"/>
+    </radialGradient>
+    <radialGradient id="vig" cx="50%" cy="42%" r="72%">
+      <stop offset="62%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.4"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#felt)"/>
+  <rect width="512" height="512" rx="96" fill="url(#vig)"/>
+  <rect x="14" y="14" width="484" height="484" rx="84" fill="none" stroke="#e7c25c" stroke-opacity="0.30" stroke-width="3"/>
+
+  <!-- chip -->
+  <circle cx="256" cy="263" r="186" fill="#000" fill-opacity="0.25"/>
+  <circle cx="256" cy="256" r="182" fill="#e7c25c"/>
+  <g transform="rotate(0,256,256)"><rect x="236" y="74" width="40" height="54" rx="12" fill="#f3ecda"/></g><g transform="rotate(60,256,256)"><rect x="236" y="74" width="40" height="54" rx="12" fill="#f3ecda"/></g><g transform="rotate(120,256,256)"><rect x="236" y="74" width="40" height="54" rx="12" fill="#f3ecda"/></g><g transform="rotate(180,256,256)"><rect x="236" y="74" width="40" height="54" rx="12" fill="#f3ecda"/></g><g transform="rotate(240,256,256)"><rect x="236" y="74" width="40" height="54" rx="12" fill="#f3ecda"/></g><g transform="rotate(300,256,256)"><rect x="236" y="74" width="40" height="54" rx="12" fill="#f3ecda"/></g>
+  <circle cx="256" cy="256" r="130" fill="#f3ecda"/>
+  <circle cx="256" cy="256" r="130" fill="none" stroke="#0f5a37" stroke-width="10"/>
+  <g transform="translate(175,175)"><path d="M50 8 C50 30 78 38 78 58 C78 72 66 78 58 72 C60 82 64 88 72 92 L28 92 C36 88 40 82 42 72 C34 78 22 72 22 58 C22 38 50 30 50 8 Z" transform="scale(1.62)" fill="#16202b"/></g>
+</svg>
