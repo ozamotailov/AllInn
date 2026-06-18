@@ -43,15 +43,21 @@ export function registerRoutes(app: FastifyInstance, env: Env, registry: RoomReg
     }
   });
 
-  if (env.allowDevAuth) {
-    app.post('/auth/dev', async (req) => {
-      // Optional ?id=&name= so dev sessions can simulate distinct users.
-      const q = req.query as { id?: string; name?: string };
-      const id = q.id ?? 'dev-1';
-      const displayName = q.name ?? (q.id ? `Dev ${q.id}` : 'Dev User');
-      return issue({ id, displayName }, env.sessionSecret);
-    });
-  }
+  // Dev-only login bypass. Always registered so a disabled call returns a clear
+  // 403 instead of a confusing 404; gated by ALLOW_DEV_AUTH.
+  app.post('/auth/dev', async (req, reply) => {
+    if (!env.allowDevAuth) {
+      return reply.code(403).send({
+        error:
+          'Dev auth is disabled — set ALLOW_DEV_AUTH=true in packages/server/.env and restart (local browser testing only)',
+      });
+    }
+    // Optional ?id=&name= so dev sessions can simulate distinct users.
+    const q = req.query as { id?: string; name?: string };
+    const id = q.id ?? 'dev-1';
+    const displayName = q.name ?? (q.id ? `Dev ${q.id}` : 'Dev User');
+    return issue({ id, displayName }, env.sessionSecret);
+  });
 
   app.get('/me', async (req, reply) => {
     try {
