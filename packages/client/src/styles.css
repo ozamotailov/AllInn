@@ -196,6 +196,12 @@ button.ghost {
 .prow.folded { opacity: 0.45; }
 .prow .stack { font-variant-numeric: tabular-nums; font-weight: 600; }
 
+.your-turn {
+  margin: 0;
+  font-weight: 600;
+  text-align: center;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

@@ -1,7 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PersonalTableState, LegalMoves, PlayerActionIntent } from '@allinn/shared';
 import { CardView } from './Card.js';
 import type { HandResultView } from './room.js';
+
+/** Seconds left until `deadline` (ms epoch), ticking once a second. */
+function useCountdown(deadline?: number): number | undefined {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!deadline) return;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [deadline]);
+  if (!deadline) return undefined;
+  return Math.max(0, Math.ceil((deadline - now) / 1000));
+}
 
 export function Table({
   state,
@@ -16,6 +28,7 @@ export function Table({
 }) {
   const potTotal = state.pots.reduce((a, p) => a + p.amount, 0);
   const lm = state.yourLegalMoves;
+  const secsLeft = useCountdown(state.street === 'showdown' ? undefined : state.actionDeadline);
 
   return (
     <section className="table">
@@ -46,6 +59,7 @@ export function Table({
               <span className="muted small">
                 {p.status === 'folded' ? 'folded' : p.status === 'allin' ? 'all-in' : ''}
                 {p.committed > 0 ? ` · bet ${p.committed}` : ''}
+                {turn && secsLeft !== undefined ? ` · ⏱ ${secsLeft}s` : ''}
               </span>
               <span className="stack">{p.stack}</span>
             </li>
@@ -83,6 +97,7 @@ export function Table({
         <ActionBar
           key={`${state.toActSeat}-${lm.minRaiseTo}-${lm.maxRaiseTo}`}
           lm={lm}
+          secsLeft={secsLeft}
           onAct={onAct}
         />
       )}
@@ -94,12 +109,22 @@ export function Table({
   );
 }
 
-function ActionBar({ lm, onAct }: { lm: LegalMoves; onAct: (intent: PlayerActionIntent) => void }) {
+function ActionBar({
+  lm,
+  secsLeft,
+  onAct,
+}: {
+  lm: LegalMoves;
+  secsLeft?: number;
+  onAct: (intent: PlayerActionIntent) => void;
+}) {
   const [raiseTo, setRaiseTo] = useState(lm.minRaiseTo);
   const clamped = Math.min(Math.max(raiseTo, lm.minRaiseTo), lm.maxRaiseTo);
 
   return (
-    <div className="actions">
+    <>
+      <p className="your-turn">Your turn{secsLeft !== undefined ? ` · ${secsLeft}s` : ''}</p>
+      <div className="actions">
       {lm.canFold && <button onClick={() => onAct({ type: 'fold' })}>Fold</button>}
       {lm.canCheck && <button onClick={() => onAct({ type: 'check' })}>Check</button>}
       {lm.canCall && (
@@ -121,6 +146,7 @@ function ActionBar({ lm, onAct }: { lm: LegalMoves; onAct: (intent: PlayerAction
           </button>
         </span>
       )}
-    </div>
+      </div>
+    </>
   );
 }

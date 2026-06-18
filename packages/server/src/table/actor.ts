@@ -40,6 +40,8 @@ export class TableActor {
   private hand?: HandMachine;
   private buttonSeat = -1;
   private intermission?: ReturnType<typeof setTimeout>;
+  private actionTimer?: ReturnType<typeof setTimeout>;
+  private actionDeadline?: number;
 
   constructor(
     readonly roomCode: string,
@@ -122,13 +124,52 @@ export class TableActor {
   }
 
   private afterHandProgress(): void {
-    if (this.hand?.isComplete()) this.finishHand();
-    else this.broadcast();
+    if (this.hand?.isComplete()) {
+      this.finishHand();
+    } else {
+      this.armTimer();
+      this.broadcast();
+    }
+  }
+
+  // ── Action timer ─────────────────────────────────────────────────────────────
+
+  private armTimer(): void {
+    this.clearTimer();
+    const seat = this.hand?.toActSeat;
+    if (!this.hand || this.hand.isComplete() || seat === undefined) {
+      this.actionDeadline = undefined;
+      return;
+    }
+    const ms = this.config.actionTimerSeconds * 1000;
+    this.actionDeadline = Date.now() + ms;
+    this.actionTimer = setTimeout(() => this.onTimeout(seat), ms);
+  }
+
+  private clearTimer(): void {
+    if (this.actionTimer) {
+      clearTimeout(this.actionTimer);
+      this.actionTimer = undefined;
+    }
+  }
+
+  /** Time ran out: auto-check if legal, otherwise fold. */
+  private onTimeout(seat: number): void {
+    this.actionTimer = undefined;
+    if (!this.hand || this.hand.isComplete() || this.hand.toActSeat !== seat) return;
+    const lm = this.hand.legalMoves();
+    const intent: PlayerActionIntent = lm?.canCheck ? { type: 'check' } : { type: 'fold' };
+    this.hand.applyAction(seat, intent);
+    this.afterHandProgress();
   }
 
   private maybeStartHand(): void {
     if (this.phase !== 'lobby' || this.intermission) return;
-    const ready = this.seats.filter((s) => s.status === 'seated' && s.stack > 0);
+    // Only connected seated players with chips — avoids looping hands in an
+    // abandoned room (auto-fold would otherwise play it out forever).
+    const ready = this.seats.filter(
+      (s) => s.status === 'seated' && s.stack > 0 && this.connections.has(s.userId as string),
+    );
     if (ready.length < 2) return;
 
     this.buttonSeat = this.nextButton(ready.map((s) => s.seat));
@@ -146,11 +187,16 @@ export class TableActor {
     this.phase = 'playing';
     this.hand.start();
     if (this.hand.isComplete()) this.finishHand();
-    else this.broadcast();
+    else {
+      this.armTimer();
+      this.broadcast();
+    }
   }
 
   private finishHand(): void {
     if (!this.hand) return;
+    this.clearTimer();
+    this.actionDeadline = undefined;
     for (const fs of this.hand.finalStacks()) {
       const seat = this.seats.find((s) => s.seat === fs.seat);
       if (seat) seat.stack = fs.stack;
@@ -197,7 +243,9 @@ export class TableActor {
 
   private sendStateTo(conn: Connection): void {
     if (this.phase === 'playing' && this.hand) {
-      conn.send({ t: 'state', state: this.hand.personalState(conn.userId, this.roomCode) });
+      const state = this.hand.personalState(conn.userId, this.roomCode);
+      state.actionDeadline = this.actionDeadline;
+      conn.send({ t: 'state', state });
     } else {
       conn.send({ t: 'room', state: this.snapshot() });
     }
