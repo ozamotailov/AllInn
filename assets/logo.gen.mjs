@@ -52,7 +52,7 @@ for (const [ch, w, fill] of specs) {
 const SPADE_PATH =
   'M50 8 C50 30 78 38 78 58 C78 72 66 78 58 72 C60 82 64 88 72 92 L28 92 C36 88 40 82 42 72 C34 78 22 72 22 58 C22 38 50 30 50 8 Z';
 const HEART_PATH =
-  'M50 88 C22 66 8 50 8 32 C8 18 20 12 30 18 C38 22 46 32 50 38 C54 32 62 22 70 18 C80 12 92 18 92 32 C92 50 78 66 50 88 Z';
+  'M50 86 C30 70 22 56 22 40 C22 26 34 20 42 28 C46 32 50 38 50 38 C50 38 54 32 58 28 C66 20 78 26 78 40 C78 56 70 70 50 86 Z';
 
 function card(cx, cy, angle, path, color) {
   const cw = 96, ch = 134;
@@ -66,7 +66,7 @@ function card(cx, cy, angle, path, color) {
     <rect x="${-cw / 2}" y="${-ch / 2}" width="${cw}" height="${ch}" rx="12" fill="#fbfbf7" stroke="#d8d8cf"/>
     ${corner}
     <g transform="rotate(180)">${corner}</g>
-    ${pip(1.45, -36, -50)}
+    ${pip(1.2, -60, -62)}
   </g>`;
 }
 
