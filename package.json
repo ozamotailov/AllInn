@@ -1,18 +1,18 @@
 {
-  "name": "telegram-poker",
+  "name": "allinn",
   "private": true,
   "version": "0.0.0",
-  "description": "Telegram Mini App — Texas Hold'em home-game client (virtual chips, off-app settlement)",
+  "description": "AllInn — Telegram Mini App for Texas Hold'em home games with friends (virtual chips, off-app settlement)",
   "type": "module",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @poker/shared && npm run build --workspaces --if-present",
+    "build": "npm run build -w @allinn/shared && npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "dev:server": "npm run dev -w @poker/server",
-    "dev:client": "npm run dev -w @poker/client"
+    "dev:server": "npm run dev -w @allinn/server",
+    "dev:client": "npm run dev -w @allinn/client"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

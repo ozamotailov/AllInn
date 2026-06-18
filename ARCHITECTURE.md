@@ -1,4 +1,4 @@
-# Architecture — Telegram Poker (Texas Hold'em home-game)
+# Architecture — AllInn (Texas Hold'em home-game)
 
 A Telegram Mini App for playing Texas Hold'em with friends on **virtual chips**.
 Friends agree chips ≈ real money by convention and **settle outside the app**.

@@ -5,7 +5,7 @@
 
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { Server } from 'node:http';
-import { type ClientMessage, type ServerMessage, DEFAULT_CONFIG } from '@poker/shared';
+import { type ClientMessage, type ServerMessage, DEFAULT_CONFIG } from '@allinn/shared';
 import { validateInitData } from '../auth/initData.js';
 import { TableActor } from '../table/actor.js';
 

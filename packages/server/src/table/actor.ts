@@ -14,7 +14,7 @@ import {
   type PlayerActionIntent,
   type PersonalTableState,
   type RandomInt,
-} from '@poker/shared';
+} from '@allinn/shared';
 
 /** CSPRNG-backed uniform int in [0, max) — injected into the shuffle. */
 export const cryptoRandomInt: RandomInt = (max) => crypto.randomInt(max);

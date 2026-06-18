@@ -1,5 +1,5 @@
 {
-  "name": "@poker/server",
+  "name": "@allinn/server",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@poker/shared": "*",
+    "@allinn/shared": "*",
     "fastify": "^5.2.0",
     "ws": "^8.18.0"
   },

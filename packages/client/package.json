@@ -1,5 +1,5 @@
 {
-  "name": "@poker/client",
+  "name": "@allinn/client",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@poker/shared": "*",
+    "@allinn/shared": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.0"

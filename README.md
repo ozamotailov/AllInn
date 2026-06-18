@@ -1,4 +1,6 @@
-# Telegram Poker 🃏
+# AllInn 🃏
+
+> All in, with your inner circle.
 
 Texas Hold'em **home-game** client as a Telegram Mini App. Play with friends on
 **virtual chips**; settle up outside the app. No real money / crypto inside.
@@ -28,10 +30,10 @@ packages/
 npm install
 
 # shared must be built first — server & client import its compiled output
-npm run build -w @poker/shared
+npm run build -w @allinn/shared
 
 # run the settlement optimizer's unit tests (real, working code)
-npm test -w @poker/shared
+npm test -w @allinn/shared
 
 # dev (two terminals)
 cp packages/server/.env.example packages/server/.env   # add your BOT_TOKEN
