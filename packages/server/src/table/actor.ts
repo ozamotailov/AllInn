@@ -47,6 +47,7 @@ export class TableActor {
   private actionDeadline?: number;
   private handNonce = 0;
   private fairness?: FairnessReveal;
+  private lastActivityAt = Date.now();
   /** Final net of players who left the table mid-session, kept for the ledger. */
   private departed: DepartedEntry[] = [];
   /** Set by the registry to persist between-hand state after each change. */
@@ -88,9 +89,32 @@ export class TableActor {
     this.onPersist?.();
   }
 
+  private touch(): void {
+    this.lastActivityAt = Date.now();
+  }
+
+  /** Milliseconds since the last meaningful activity. */
+  get idleMs(): number {
+    return Date.now() - this.lastActivityAt;
+  }
+
+  get connectionCount(): number {
+    return this.connections.size;
+  }
+
+  /** Stop all timers — called by the registry before evicting an idle room. */
+  dispose(): void {
+    this.clearTimer();
+    if (this.intermission) {
+      clearTimeout(this.intermission);
+      this.intermission = undefined;
+    }
+  }
+
   // ── Presence / seating ───────────────────────────────────────────────────────
 
   attach(conn: Connection): void {
+    this.touch();
     this.connections.set(conn.userId, conn);
     this.sendStateTo(conn);
     // A reconnecting player may complete the table (e.g. after a restart).
@@ -98,11 +122,13 @@ export class TableActor {
   }
 
   detach(userId: string): void {
+    this.touch();
     this.connections.delete(userId);
     this.broadcast();
   }
 
   sit(userId: string, displayName: string, seat: number): SitResult {
+    this.touch();
     if (this.phase !== 'lobby') return { ok: false, error: 'Cannot sit during a hand' };
     if (seat < 0 || seat >= this.seats.length) return { ok: false, error: 'Invalid seat' };
     if (this.seats.some((s) => s.userId === userId)) return { ok: false, error: 'Already seated' };
@@ -121,6 +147,7 @@ export class TableActor {
   }
 
   leave(userId: string): void {
+    this.touch();
     if (this.phase === 'playing' && this.hand) {
       // Mid-hand: only meaningful if it's their turn → treat as a fold.
       const seat = this.seatOf(userId);
@@ -151,6 +178,7 @@ export class TableActor {
   }
 
   rebuy(userId: string, amount: number): void {
+    this.touch();
     const conn = this.connections.get(userId);
     if (this.handActive()) {
       conn?.send({ t: 'error', code: 'rebuy', message: 'Wait until the hand ends' });
@@ -208,6 +236,7 @@ export class TableActor {
   // ── Gameplay ─────────────────────────────────────────────────────────────────
 
   handleAction(userId: string, intent: PlayerActionIntent): void {
+    this.touch();
     const conn = this.connections.get(userId);
     if (this.phase !== 'playing' || !this.hand) {
       conn?.send({ t: 'error', code: 'no_hand', message: 'No hand in progress' });

@@ -12,6 +12,8 @@ export interface Env {
   appShortName: string;
   /** SQLite file path for room persistence. */
   dbPath: string;
+  /** Evict rooms with no connections after this many minutes idle. */
+  roomTtlMinutes: number;
 }
 
 export function loadEnv(): Env {
@@ -23,6 +25,7 @@ export function loadEnv(): Env {
     botUsername: process.env.BOT_USERNAME ?? '',
     appShortName: process.env.APP_SHORT_NAME ?? '',
     dbPath: process.env.DB_PATH ?? 'allinn.db',
+    roomTtlMinutes: Number(process.env.ROOM_TTL_MINUTES ?? 30),
   };
 }
 

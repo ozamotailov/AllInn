@@ -1,5 +1,7 @@
 // In-memory room registry backed by a RoomStore. Rooms are restored on startup
-// and re-persisted (between hands) whenever their state changes.
+// and re-persisted (between hands) whenever their state changes. A periodic
+// sweep evicts rooms that have had no connections for longer than the TTL,
+// removing them from memory and the store.
 
 import crypto from 'node:crypto';
 import type { RoomConfig } from '@allinn/shared';
@@ -17,10 +19,28 @@ function generateCode(length = 6): string {
   return out;
 }
 
+export interface RegistryOptions {
+  /** Evict rooms idle (no connections) longer than this. Default 30 min. */
+  ttlMs?: number;
+  /** Sweep interval. Default 60s. */
+  sweepMs?: number;
+  /** Called with each evicted room code (e.g. for logging). */
+  onEvict?: (code: string) => void;
+}
+
 export class RoomRegistry {
   private readonly rooms = new Map<string, TableActor>();
+  private readonly ttlMs: number;
+  private readonly onEvict?: (code: string) => void;
+  private readonly sweepTimer: ReturnType<typeof setInterval>;
 
-  constructor(private readonly store: RoomStore) {
+  constructor(
+    private readonly store: RoomStore,
+    opts: RegistryOptions = {},
+  ) {
+    this.ttlMs = opts.ttlMs ?? 30 * 60 * 1000;
+    this.onEvict = opts.onEvict;
+
     for (const snap of store.loadAll()) {
       const actor = new TableActor(snap.code, snap.config, snap.hostId, {
         seats: snap.seats,
@@ -30,6 +50,9 @@ export class RoomRegistry {
       this.wirePersistence(actor);
       this.rooms.set(snap.code, actor);
     }
+
+    this.sweepTimer = setInterval(() => this.evictIdle(), opts.sweepMs ?? 60 * 1000);
+    this.sweepTimer.unref(); // don't keep the process alive just for the sweep
   }
 
   create(config: RoomConfig, hostId: string): TableActor {
@@ -48,6 +71,26 @@ export class RoomRegistry {
 
   get size(): number {
     return this.rooms.size;
+  }
+
+  /** Remove rooms with no connections idle longer than the TTL. Returns codes. */
+  evictIdle(): string[] {
+    const evicted: string[] = [];
+    for (const [code, actor] of this.rooms) {
+      if (actor.connectionCount === 0 && actor.idleMs >= this.ttlMs) {
+        actor.dispose();
+        this.rooms.delete(code);
+        this.store.remove(code);
+        this.onEvict?.(code);
+        evicted.push(code);
+      }
+    }
+    return evicted;
+  }
+
+  /** Stop the sweep timer (tests / shutdown). */
+  stop(): void {
+    clearInterval(this.sweepTimer);
   }
 
   private wirePersistence(actor: TableActor): void {
