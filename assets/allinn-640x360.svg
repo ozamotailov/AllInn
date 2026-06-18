@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <defs>
+    <radialGradient id="felt" cx="46%" cy="34%" r="85%">
+      <stop offset="0%" stop-color="#1d7d50"/>
+      <stop offset="58%" stop-color="#115f3b"/>
+      <stop offset="100%" stop-color="#072d1c"/>
+    </radialGradient>
+    <radialGradient id="vig" cx="50%" cy="42%" r="75%">
+      <stop offset="60%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.38"/>
+    </radialGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#felt)"/>
+  <rect width="640" height="360" fill="url(#vig)"/>
+  <rect x="12" y="12" width="616" height="336" rx="18" fill="none" stroke="#e7c25c" stroke-opacity="0.32" stroke-width="2"/>
+
+  <g transform="translate(476,126) rotate(-9)">
+    <rect x="-44" y="-60" width="96" height="134" rx="12" fill="#000000" fill-opacity="0.22"/>
+    <rect x="-48" y="-67" width="96" height="134" rx="12" fill="#fbfbf7" stroke="#d8d8cf"/>
+    <g transform="translate(-37,-57) scale(0.4)"><path d="M50 88 C22 66 8 50 8 32 C8 18 20 12 30 18 C38 22 46 32 50 38 C54 32 62 22 70 18 C80 12 92 18 92 32 C92 50 78 66 50 88 Z" fill="#d23b46"/></g>
+    <g transform="translate(-38,-52) scale(1.5)"><path d="M50 88 C22 66 8 50 8 32 C8 18 20 12 30 18 C38 22 46 32 50 38 C54 32 62 22 70 18 C80 12 92 18 92 32 C92 50 78 66 50 88 Z" fill="#d23b46"/></g>
+  </g>
+  <g transform="translate(552,144) rotate(10)">
+    <rect x="-44" y="-60" width="96" height="134" rx="12" fill="#000000" fill-opacity="0.22"/>
+    <rect x="-48" y="-67" width="96" height="134" rx="12" fill="#fbfbf7" stroke="#d8d8cf"/>
+    <g transform="translate(-37,-57) scale(0.4)"><path d="M50 8 C50 30 78 38 78 58 C78 72 66 78 58 72 C60 82 64 88 72 92 L28 92 C36 88 40 82 42 72 C34 78 22 72 22 58 C22 38 50 30 50 8 Z" fill="#16202b"/></g>
+    <g transform="translate(-38,-52) scale(1.5)"><path d="M50 8 C50 30 78 38 78 58 C78 72 66 78 58 72 C60 82 64 88 72 92 L28 92 C36 88 40 82 42 72 C34 78 22 72 22 58 C22 38 50 30 50 8 Z" fill="#16202b"/></g>
+  </g>
+
+  <polygon points="68,122 81,122 62.5,204 49.5,204" fill="#f3ecda"/><polygon points="68,122 81,122 99.5,204 86.5,204" fill="#f3ecda"/><rect x="59.5" y="169.56" width="30" height="11.700000000000001" rx="2" fill="#f3ecda"/><rect x="112.5" y="122" width="13" height="82" rx="2" fill="#f3ecda"/><rect x="112.5" y="191" width="42" height="13" rx="2" fill="#f3ecda"/><rect x="167.5" y="122" width="13" height="82" rx="2" fill="#f3ecda"/><rect x="167.5" y="191" width="42" height="13" rx="2" fill="#f3ecda"/><rect x="229" y="122" width="13" height="82" rx="2" fill="#e7c25c"/><rect x="261.5" y="122" width="13" height="82" rx="2" fill="#e7c25c"/><rect x="298.5" y="122" width="13" height="82" rx="2" fill="#e7c25c"/><polygon points="261.5,122 274.5,122 311.5,204 298.5,204" fill="#e7c25c"/><rect x="324.5" y="122" width="13" height="82" rx="2" fill="#e7c25c"/><rect x="361.5" y="122" width="13" height="82" rx="2" fill="#e7c25c"/><polygon points="324.5,122 337.5,122 374.5,204 361.5,204" fill="#e7c25c"/>
+
+  <g>
+    <circle cx="96" cy="286" r="27" fill="#c9433f" stroke="#00000033" stroke-width="2"/>
+    <circle cx="96" cy="286" r="19" fill="none" stroke="#ffffffcc" stroke-width="3" stroke-dasharray="6 7"/>
+  </g>
+  <g>
+    <circle cx="150" cy="286" r="27" fill="#2f6fb0" stroke="#00000033" stroke-width="2"/>
+    <circle cx="150" cy="286" r="19" fill="none" stroke="#ffffffcc" stroke-width="3" stroke-dasharray="6 7"/>
+  </g>
+  <g>
+    <circle cx="123" cy="263" r="27" fill="#e7c25c" stroke="#00000033" stroke-width="2"/>
+    <circle cx="123" cy="263" r="19" fill="none" stroke="#ffffffcc" stroke-width="3" stroke-dasharray="6 7"/>
+  </g>
+
+  <!-- spade accent centered under the wordmark -->
+  <g transform="translate(203,212) scale(0.4)"><path d="M50 8 C50 30 78 38 78 58 C78 72 66 78 58 72 C60 82 64 88 72 92 L28 92 C36 88 40 82 42 72 C34 78 22 72 22 58 C22 38 50 30 50 8 Z" fill="#e7c25c" fill-opacity="0.9"/></g>
+</svg>
