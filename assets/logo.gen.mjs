@@ -66,7 +66,7 @@ function card(cx, cy, angle, path, color) {
     <rect x="${-cw / 2}" y="${-ch / 2}" width="${cw}" height="${ch}" rx="12" fill="#fbfbf7" stroke="#d8d8cf"/>
     ${corner}
     <g transform="rotate(180)">${corner}</g>
-    ${pip(1.2, -60, -62)}
+    ${pip(0.92, -46, -47)}
   </g>`;
 }
 
