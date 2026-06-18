@@ -12,7 +12,9 @@ export function connectRoom(
   token: string,
   onMessage: (msg: ServerMessage) => void,
 ): RoomSocket {
-  const base = API_URL.replace(/^http/, 'ws');
+  // Same-origin by default (API_URL empty) → derive ws(s):// from the page origin.
+  const httpBase = API_URL || window.location.origin;
+  const base = httpBase.replace(/^http/, 'ws');
   const ws = new WebSocket(
     `${base}/ws?room=${encodeURIComponent(roomCode)}&token=${encodeURIComponent(token)}`,
   );

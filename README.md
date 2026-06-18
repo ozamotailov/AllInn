@@ -48,9 +48,9 @@ npm run dev:client
 > Without it you'll see "Sign-in failed: Request failed (404)" — that's expected
 > until you enable the flag (or open the app from inside Telegram with a real bot).
 
-> For local testing inside Telegram you'll need an HTTPS tunnel to the Vite dev
-> server (e.g. `cloudflared` / `ngrok`) and set that URL as the Mini App URL in
-> BotFather.
+> To run it inside real Telegram (one HTTPS tunnel, bot setup, invite links),
+> follow [docs/telegram-setup.md](docs/telegram-setup.md). Vite proxies the API
+> and WebSocket to the backend, so a single tunnel to port 5173 is all you need.
 
 ## Status
 
