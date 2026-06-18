@@ -48,7 +48,8 @@ export function registerRoutes(app: FastifyInstance, env: Env, registry: RoomReg
       // Optional ?id=&name= so dev sessions can simulate distinct users.
       const q = req.query as { id?: string; name?: string };
       const id = q.id ?? 'dev-1';
-      return issue({ id, displayName: q.name ?? `Dev ${id}` }, env.sessionSecret);
+      const displayName = q.name ?? (q.id ? `Dev ${q.id}` : 'Dev User');
+      return issue({ id, displayName }, env.sessionSecret);
     });
   }
 

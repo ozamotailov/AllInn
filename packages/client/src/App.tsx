@@ -9,7 +9,7 @@ import { Lobby } from './Lobby.js';
 // startapp deep link) → connect WS → lobby with live seating.
 
 export function App() {
-  const { status, user, token, login } = useSession();
+  const { status, user, token, error, login } = useSession();
 
   useEffect(() => {
     void login();
@@ -19,7 +19,11 @@ export function App() {
     return <Shell><p className="muted">Signing in…</p></Shell>;
   }
   if (status === 'error' || !user || !token) {
-    return <Shell><p className="muted">Sign-in failed.</p></Shell>;
+    return (
+      <Shell>
+        <p className="error">Sign-in failed{error ? `: ${error}` : ''}</p>
+      </Shell>
+    );
   }
   return (
     <Shell>

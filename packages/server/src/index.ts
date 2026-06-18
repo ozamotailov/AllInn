@@ -7,6 +7,13 @@ import { registerRoutes } from './http/routes.js';
 import { createGateway } from './ws/gateway.js';
 import { RoomRegistry } from './rooms/registry.js';
 
+// Load packages/server/.env (if present) before reading config. Node 20.12+.
+try {
+  (process as NodeJS.Process & { loadEnvFile?: (path?: string) => void }).loadEnvFile?.();
+} catch {
+  /* no .env file — fall back to the real environment */
+}
+
 const env = loadEnv();
 const app = Fastify({ logger: true });
 const registry = new RoomRegistry();

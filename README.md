@@ -36,10 +36,17 @@ npm run build -w @allinn/shared
 npm test -w @allinn/shared
 
 # dev (two terminals)
-cp packages/server/.env.example packages/server/.env   # add your BOT_TOKEN
+cp packages/server/.env.example packages/server/.env
+# For browser testing without Telegram, set in that .env:
+#   ALLOW_DEV_AUTH=true        (enables POST /auth/dev so the client can log in)
+# The server auto-loads packages/server/.env on startup.
 npm run dev:server
 npm run dev:client
 ```
+
+> Browser dev login uses `/auth/dev`, which only exists when `ALLOW_DEV_AUTH=true`.
+> Without it you'll see "Sign-in failed: Request failed (404)" — that's expected
+> until you enable the flag (or open the app from inside Telegram with a real bot).
 
 > For local testing inside Telegram you'll need an HTTPS tunnel to the Vite dev
 > server (e.g. `cloudflared` / `ngrok`) and set that URL as the Mini App URL in
