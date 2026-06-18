@@ -1,0 +1,24 @@
+{
+  "name": "telegram-poker",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Telegram Mini App — Texas Hold'em home-game client (virtual chips, off-app settlement)",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @poker/shared && npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:server": "npm run dev -w @poker/server",
+    "dev:client": "npm run dev -w @poker/client"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
