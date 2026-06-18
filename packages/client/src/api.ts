@@ -32,8 +32,12 @@ export function authenticate(initData: string): Promise<AuthResponse> {
 }
 
 /** Dev login (requires ALLOW_DEV_AUTH=true on the server). */
-export function devAuthenticate(): Promise<AuthResponse> {
-  return request<AuthResponse>('POST', '/auth/dev');
+export function devAuthenticate(id?: string, name?: string): Promise<AuthResponse> {
+  const q = new URLSearchParams();
+  if (id) q.set('id', id);
+  if (name) q.set('name', name);
+  const qs = q.toString();
+  return request<AuthResponse>('POST', `/auth/dev${qs ? `?${qs}` : ''}`);
 }
 
 export function createRoom(config: RoomConfig, token: string): Promise<CreateRoomResponse> {

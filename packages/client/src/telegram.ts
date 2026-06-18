@@ -33,7 +33,12 @@ export function getInitDataRaw(): string {
 
 /** Room code from a Direct Mini App invite link (?startapp=<roomCode>). */
 export function getStartParam(): string | undefined {
-  return webApp()?.initDataUnsafe.start_param;
+  const fromTelegram = webApp()?.initDataUnsafe.start_param;
+  if (fromTelegram) return fromTelegram;
+  // Plain-browser dev fallback: Telegram only maps ?startapp= → start_param when
+  // launched from a t.me link, so read it from the URL ourselves.
+  const q = new URLSearchParams(window.location.search);
+  return q.get('startapp') ?? q.get('tgWebAppStartParam') ?? undefined;
 }
 
 /** True when running inside the real Telegram client (vs. a plain browser tab). */
