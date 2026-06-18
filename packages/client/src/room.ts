@@ -8,6 +8,7 @@ import type {
   PlayerActionIntent,
   LedgerRow,
   Settlement,
+  FairnessReveal,
 } from '@allinn/shared';
 import { connectRoom, type RoomSocket } from './ws.js';
 
@@ -16,6 +17,7 @@ type ConnState = 'idle' | 'connecting' | 'connected' | 'error';
 export interface HandResultView {
   board: Card[];
   showdown: ShowdownEntry[];
+  fairness?: FairnessReveal;
 }
 
 export interface LedgerView {
@@ -63,7 +65,7 @@ export const useRoom = create<RoomStore>((set, get) => ({
           }));
           break;
         case 'handResult':
-          set({ result: { board: msg.board, showdown: msg.showdown } });
+          set({ result: { board: msg.board, showdown: msg.showdown, fairness: msg.fairness } });
           break;
         case 'ledger':
           set({ ledger: { rows: msg.rows, settlements: msg.settlements } });

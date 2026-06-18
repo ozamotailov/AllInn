@@ -47,6 +47,8 @@ export interface PublicTableState {
   players: PublicPlayer[];
   /** Unix ms when the current actor's timer expires, if a hand is live. */
   actionDeadline?: number;
+  /** sha256(serverSeed) committed before the deal; revealed in handResult. */
+  deckCommitment?: string;
 }
 
 /** The legal actions for the player to act, as raise-to totals for this street. */

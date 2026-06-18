@@ -9,6 +9,7 @@
 // Known gap (step 6): a mid-hand disconnect on the actor's turn has no timeout
 // yet, so the hand can stall. Action timer + auto-fold come next.
 
+import crypto from 'node:crypto';
 import type {
   RoomConfig,
   RoomPublicState,
@@ -18,9 +19,9 @@ import type {
   Card,
   ShowdownEntry,
   Settlement,
+  FairnessReveal,
 } from '@allinn/shared';
-import { HandMachine, computeLedger, simplifyDebts } from '@allinn/shared';
-import { cryptoRandomInt } from '../rng.js';
+import { HandMachine, computeLedger, simplifyDebts, seededRandomInt, deckSeedString } from '@allinn/shared';
 import type { RoomSnapshot, DepartedEntry } from '../store/types.js';
 
 const INTERMISSION_MS = 4000;
@@ -44,6 +45,8 @@ export class TableActor {
   private intermission?: ReturnType<typeof setTimeout>;
   private actionTimer?: ReturnType<typeof setTimeout>;
   private actionDeadline?: number;
+  private handNonce = 0;
+  private fairness?: FairnessReveal;
   /** Final net of players who left the table mid-session, kept for the ledger. */
   private departed: DepartedEntry[] = [];
   /** Set by the registry to persist between-hand state after each change. */
@@ -273,6 +276,15 @@ export class TableActor {
     if (ready.length < 2) return;
 
     this.buttonSeat = this.nextButton(ready.map((s) => s.seat));
+
+    // Provably-fair: commit to a random server seed before dealing.
+    const serverSeed = crypto.randomBytes(16).toString('hex');
+    const clientSeed = ready.map((s) => s.userId).join(',');
+    const nonce = ++this.handNonce;
+    const commitment = crypto.createHash('sha256').update(serverSeed).digest('hex');
+    this.fairness = { commitment, serverSeed, clientSeed, nonce, seatCount: ready.length };
+    const randomInt = seededRandomInt(deckSeedString(serverSeed, clientSeed, nonce));
+
     this.hand = new HandMachine(
       this.config,
       ready.map((s) => ({
@@ -282,7 +294,7 @@ export class TableActor {
         stack: s.stack,
       })),
       this.buttonSeat,
-      cryptoRandomInt,
+      randomInt,
     );
     this.phase = 'playing';
     this.hand.start();
@@ -304,7 +316,7 @@ export class TableActor {
     this.persist();
     const result = this.hand.result();
     this.broadcast(); // final hand state (showdown board + stacks)
-    this.broadcastResult(result.board, result.showdown);
+    this.broadcastResult(result.board, result.showdown, this.fairness);
     this.scheduleIntermission();
   }
 
@@ -346,6 +358,7 @@ export class TableActor {
     if (this.phase === 'playing' && this.hand) {
       const state = this.hand.personalState(conn.userId, this.roomCode);
       state.actionDeadline = this.actionDeadline;
+      state.deckCommitment = this.fairness?.commitment;
       conn.send({ t: 'state', state });
     } else {
       conn.send({ t: 'room', state: this.snapshot() });
@@ -356,8 +369,8 @@ export class TableActor {
     for (const conn of this.connections.values()) this.sendStateTo(conn);
   }
 
-  private broadcastResult(board: Card[], showdown: ShowdownEntry[]): void {
-    const msg: ServerMessage = { t: 'handResult', board, showdown };
+  private broadcastResult(board: Card[], showdown: ShowdownEntry[], fairness?: FairnessReveal): void {
+    const msg: ServerMessage = { t: 'handResult', board, showdown, fairness };
     for (const conn of this.connections.values()) conn.send(msg);
   }
 }

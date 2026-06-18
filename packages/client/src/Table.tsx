@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { PersonalTableState, LegalMoves, PlayerActionIntent } from '@allinn/shared';
+import { verifyReveal } from '@allinn/shared';
+import type {
+  PersonalTableState,
+  LegalMoves,
+  PlayerActionIntent,
+  Card,
+  FairnessReveal,
+} from '@allinn/shared';
 import { CardView } from './Card.js';
 import type { HandResultView } from './room.js';
 
@@ -48,6 +55,9 @@ export function Table({
         {state.street !== 'showdown' && state.currentBet > 0 ? ` · bet ${state.currentBet}` : ''}
         <span className="muted small"> · {state.street}</span>
       </p>
+      {state.deckCommitment && state.street !== 'showdown' && (
+        <p className="muted small mono">🔒 deck committed {state.deckCommitment.slice(0, 10)}…</p>
+      )}
 
       <ul className="players">
         {state.players.map((p) => {
@@ -94,6 +104,7 @@ export function Table({
               ))
             )}
           </ul>
+          {result.fairness && <Fairness reveal={result.fairness} board={result.board} />}
         </div>
       )}
 
@@ -160,5 +171,33 @@ function ActionBar({
       )}
       </div>
     </>
+  );
+}
+
+function Fairness({ reveal, board }: { reveal: FairnessReveal; board: Card[] }) {
+  const [status, setStatus] = useState<'idle' | 'checking' | 'ok' | 'bad'>('idle');
+
+  const verify = async () => {
+    setStatus('checking');
+    const { hashOk, boardOk } = await verifyReveal(reveal, board);
+    setStatus(hashOk && boardOk ? 'ok' : 'bad');
+  };
+
+  return (
+    <div className="fairness">
+      <div className="muted small">Provably fair · hand #{reveal.nonce}</div>
+      <div className="mono small">commit: {reveal.commitment.slice(0, 24)}…</div>
+      <div className="mono small">seed: {reveal.serverSeed}</div>
+      {status === 'idle' && (
+        <button className="link" onClick={verify}>
+          Verify deck
+        </button>
+      )}
+      {status === 'checking' && <span className="muted small">checking…</span>}
+      {status === 'ok' && (
+        <span className="ok small">✓ verified — deck was committed before the deal and unaltered</span>
+      )}
+      {status === 'bad' && <span className="error small">✗ verification failed</span>}
+    </div>
   );
 }

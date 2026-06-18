@@ -5,6 +5,7 @@ import type { PlayerActionIntent } from './actions.js';
 import type { PersonalTableState, RoomPublicState } from './state.js';
 import type { Card } from './cards.js';
 import type { LedgerRow, Settlement } from './settlement.js';
+import type { FairnessReveal } from './engine/fairness.js';
 
 // ── Client → Server ──────────────────────────────────────────────────────────
 export type ClientMessage =
@@ -28,7 +29,7 @@ export interface ShowdownEntry {
 export type ServerMessage =
   | { t: 'room'; state: RoomPublicState }
   | { t: 'state'; state: PersonalTableState }
-  | { t: 'handResult'; board: Card[]; showdown: ShowdownEntry[] }
+  | { t: 'handResult'; board: Card[]; showdown: ShowdownEntry[]; fairness?: FairnessReveal }
   | { t: 'ledger'; rows: LedgerRow[]; settlements: Settlement[] }
   | { t: 'error'; code: string; message: string }
   | { t: 'pong' };

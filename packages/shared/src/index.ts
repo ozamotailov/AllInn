@@ -8,3 +8,5 @@ export * from './protocol.js';
 export * from './settlement.js';
 export * from './engine/pots.js';
 export * from './engine/handMachine.js';
+export * from './engine/evaluator.js';
+export * from './engine/fairness.js';
