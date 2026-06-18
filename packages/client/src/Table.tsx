@@ -22,7 +22,7 @@ export function Table({
       <div className="board">
         {state.board.map((c, i) => <CardView key={i} card={c} />)}
         {Array.from({ length: 5 - state.board.length }).map((_, i) => (
-          <span key={`ph${i}`} className="card placeholder" />
+          <span key={`ph${i}`} className="playing-card placeholder" />
         ))}
       </div>
 

@@ -147,7 +147,7 @@ button.ghost {
   justify-content: center;
 }
 
-.card {
+.playing-card {
   min-width: 34px;
   height: 48px;
   display: inline-flex;
@@ -162,10 +162,10 @@ button.ghost {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.card.red { color: #d11; }
-.card.black { color: #111; }
-.card.placeholder { background: rgba(127, 127, 127, 0.15); box-shadow: none; }
-.card.back { background: linear-gradient(135deg, #3a5, #275); }
+.playing-card.red { color: #d11; }
+.playing-card.black { color: #111; }
+.playing-card.placeholder { background: rgba(127, 127, 127, 0.15); box-shadow: none; }
+.playing-card.back { background: linear-gradient(135deg, #3a5, #275); }
 
 .pot {
   text-align: center;
