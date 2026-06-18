@@ -1,16 +1,27 @@
-// Table actor — one per room. Owns authoritative room state and is the only
-// writer of it. JS is single-threaded, so synchronous method calls already
-// serialize actions; a queue can come later if any handler turns async.
+// Table actor — one per room. Owns authoritative room + hand state and is the
+// only writer. JS is single-threaded, so synchronous method calls serialize
+// actions; no queue needed yet.
 //
-// Step 2 scope: lobby + seating + presence. Gameplay (HandMachine, timers,
-// side pots) arrives in steps 4–7 (ARCHITECTURE.md §11).
+// Now drives gameplay: starts a hand when >=2 seated players have chips, routes
+// actions into the HandMachine, broadcasts personalized state (hole cards never
+// leak), and runs a short intermission between hands.
+//
+// Known gap (step 6): a mid-hand disconnect on the actor's turn has no timeout
+// yet, so the hand can stall. Action timer + auto-fold come next.
 
 import type {
   RoomConfig,
   RoomPublicState,
   SeatState,
   ServerMessage,
+  PlayerActionIntent,
+  Card,
+  ShowdownEntry,
 } from '@allinn/shared';
+import { HandMachine } from '@allinn/shared';
+import { cryptoRandomInt } from '../rng.js';
+
+const INTERMISSION_MS = 4000;
 
 export interface Connection {
   userId: string;
@@ -20,9 +31,15 @@ export interface Connection {
 
 export type SitResult = { ok: true } | { ok: false; error: string };
 
+type Phase = 'lobby' | 'playing';
+
 export class TableActor {
   private readonly connections = new Map<string, Connection>();
   private readonly seats: SeatState[];
+  private phase: Phase = 'lobby';
+  private hand?: HandMachine;
+  private buttonSeat = -1;
+  private intermission?: ReturnType<typeof setTimeout>;
 
   constructor(
     readonly roomCode: string,
@@ -36,18 +53,20 @@ export class TableActor {
     }));
   }
 
+  // ── Presence / seating ───────────────────────────────────────────────────────
+
   attach(conn: Connection): void {
     this.connections.set(conn.userId, conn);
-    this.broadcast();
+    this.sendStateTo(conn);
   }
 
   detach(userId: string): void {
-    // Keep the seat (the player may reconnect); only presence drops.
     this.connections.delete(userId);
     this.broadcast();
   }
 
   sit(userId: string, displayName: string, seat: number): SitResult {
+    if (this.phase !== 'lobby') return { ok: false, error: 'Cannot sit during a hand' };
     if (seat < 0 || seat >= this.seats.length) return { ok: false, error: 'Invalid seat' };
     if (this.seats.some((s) => s.userId === userId)) return { ok: false, error: 'Already seated' };
     const target = this.seats[seat];
@@ -58,10 +77,20 @@ export class TableActor {
     target.stack = this.config.startingStack;
     target.status = 'seated';
     this.broadcast();
+    this.maybeStartHand();
     return { ok: true };
   }
 
   leave(userId: string): void {
+    if (this.phase === 'playing' && this.hand) {
+      // Mid-hand: only meaningful if it's their turn → treat as a fold.
+      const seat = this.seatOf(userId);
+      if (seat !== undefined && this.hand.toActSeat === seat) {
+        this.hand.applyAction(seat, { type: 'fold' });
+        this.afterHandProgress();
+      }
+      return;
+    }
     const seat = this.seats.find((s) => s.userId === userId);
     if (!seat) return;
     seat.userId = undefined;
@@ -71,10 +100,94 @@ export class TableActor {
     this.broadcast();
   }
 
+  // ── Gameplay ─────────────────────────────────────────────────────────────────
+
+  handleAction(userId: string, intent: PlayerActionIntent): void {
+    const conn = this.connections.get(userId);
+    if (this.phase !== 'playing' || !this.hand) {
+      conn?.send({ t: 'error', code: 'no_hand', message: 'No hand in progress' });
+      return;
+    }
+    const seat = this.seatOf(userId);
+    if (seat === undefined) {
+      conn?.send({ t: 'error', code: 'not_seated', message: 'You are not in this hand' });
+      return;
+    }
+    const res = this.hand.applyAction(seat, intent);
+    if (!res.ok) {
+      conn?.send({ t: 'error', code: 'illegal', message: res.error });
+      return;
+    }
+    this.afterHandProgress();
+  }
+
+  private afterHandProgress(): void {
+    if (this.hand?.isComplete()) this.finishHand();
+    else this.broadcast();
+  }
+
+  private maybeStartHand(): void {
+    if (this.phase !== 'lobby' || this.intermission) return;
+    const ready = this.seats.filter((s) => s.status === 'seated' && s.stack > 0);
+    if (ready.length < 2) return;
+
+    this.buttonSeat = this.nextButton(ready.map((s) => s.seat));
+    this.hand = new HandMachine(
+      this.config,
+      ready.map((s) => ({
+        seat: s.seat,
+        userId: s.userId as string,
+        displayName: s.displayName as string,
+        stack: s.stack,
+      })),
+      this.buttonSeat,
+      cryptoRandomInt,
+    );
+    this.phase = 'playing';
+    this.hand.start();
+    if (this.hand.isComplete()) this.finishHand();
+    else this.broadcast();
+  }
+
+  private finishHand(): void {
+    if (!this.hand) return;
+    for (const fs of this.hand.finalStacks()) {
+      const seat = this.seats.find((s) => s.seat === fs.seat);
+      if (seat) seat.stack = fs.stack;
+    }
+    const result = this.hand.result();
+    this.broadcast(); // final hand state (showdown board + stacks)
+    this.broadcastResult(result.board, result.showdown);
+    this.scheduleIntermission();
+  }
+
+  private scheduleIntermission(): void {
+    if (this.intermission) return;
+    this.intermission = setTimeout(() => {
+      this.intermission = undefined;
+      this.hand = undefined;
+      this.phase = 'lobby';
+      this.broadcast();
+      this.maybeStartHand();
+    }, INTERMISSION_MS);
+  }
+
+  private nextButton(seatNumbers: number[]): number {
+    const asc = [...seatNumbers].sort((a, b) => a - b);
+    if (this.buttonSeat < 0) return asc[0];
+    return asc.find((s) => s > this.buttonSeat) ?? asc[0];
+  }
+
+  private seatOf(userId: string): number | undefined {
+    return this.seats.find((s) => s.userId === userId)?.seat;
+  }
+
+  // ── Broadcast ────────────────────────────────────────────────────────────────
+
   snapshot(): RoomPublicState {
     return {
       roomCode: this.roomCode,
-      phase: 'lobby',
+      phase: this.phase,
       hostId: this.hostId,
       config: this.config,
       seats: this.seats.map((s) => ({ ...s })),
@@ -82,8 +195,20 @@ export class TableActor {
     };
   }
 
+  private sendStateTo(conn: Connection): void {
+    if (this.phase === 'playing' && this.hand) {
+      conn.send({ t: 'state', state: this.hand.personalState(conn.userId, this.roomCode) });
+    } else {
+      conn.send({ t: 'room', state: this.snapshot() });
+    }
+  }
+
   private broadcast(): void {
-    const msg: ServerMessage = { t: 'room', state: this.snapshot() };
+    for (const conn of this.connections.values()) this.sendStateTo(conn);
+  }
+
+  private broadcastResult(board: Card[], showdown: ShowdownEntry[]): void {
+    const msg: ServerMessage = { t: 'handResult', board, showdown };
     for (const conn of this.connections.values()) conn.send(msg);
   }
 }

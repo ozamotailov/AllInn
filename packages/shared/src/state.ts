@@ -49,10 +49,23 @@ export interface PublicTableState {
   actionDeadline?: number;
 }
 
+/** The legal actions for the player to act, as raise-to totals for this street. */
+export interface LegalMoves {
+  canFold: boolean;
+  canCheck: boolean;
+  canCall: boolean;
+  callAmount: number;
+  canRaise: boolean;
+  minRaiseTo: number;
+  maxRaiseTo: number;
+}
+
 /** What a single connection receives: public state + that player's own cards. */
 export interface PersonalTableState extends PublicTableState {
   yourSeat?: number;
   yourHoleCards?: [Card, Card];
+  /** Present only when it's this player's turn. */
+  yourLegalMoves?: LegalMoves;
 }
 
 // ── Lobby / room-level state (pre-gameplay; contains no hidden information,

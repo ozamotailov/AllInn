@@ -4,6 +4,7 @@ import { useRoom } from './room.js';
 import { getStartParam } from './telegram.js';
 import { CreateRoom } from './CreateRoom.js';
 import { Lobby } from './Lobby.js';
+import { Table } from './Table.js';
 
 // Step 2 (ARCHITECTURE.md §11): authenticate → create a room (or join via the
 // startapp deep link) → connect WS → lobby with live seating.
@@ -44,7 +45,7 @@ function Shell({ children }: { children: ReactNode }) {
 function RoomFlow({ token, userId }: { token: string; userId: string }) {
   const [code, setCode] = useState<string | undefined>(getStartParam());
   const [inviteLink, setInviteLink] = useState<string>();
-  const { conn, state, error, connect, sit, leave } = useRoom();
+  const { conn, mode, room, table, result, error, connect, sit, leave, act } = useRoom();
 
   useEffect(() => {
     if (code) connect(code, token);
@@ -62,8 +63,11 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
     );
   }
   if (conn === 'error') return <p className="error">Room error: {error}</p>;
-  if (!state) return <p className="muted">Joining room {code}…</p>;
-  return (
-    <Lobby state={state} meId={userId} inviteLink={inviteLink} onSit={sit} onLeave={leave} />
-  );
+  if (mode === 'table' && table) {
+    return <Table state={table} result={result} onAct={act} onLeave={leave} />;
+  }
+  if (room) {
+    return <Lobby state={room} meId={userId} inviteLink={inviteLink} onSit={sit} onLeave={leave} />;
+  }
+  return <p className="muted">Joining room {code}…</p>;
 }

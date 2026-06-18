@@ -13,7 +13,13 @@ import { bestHand, compareValue, handName, type HandValue } from './evaluator.js
 import type { Card, RandomInt } from '../cards.js';
 import type { RoomConfig } from '../config.js';
 import type { PlayerActionIntent } from '../actions.js';
-import type { Street, PublicTableState, PersonalTableState, SeatStatus } from '../state.js';
+import type {
+  Street,
+  PublicTableState,
+  PersonalTableState,
+  SeatStatus,
+  LegalMoves,
+} from '../state.js';
 import type { ShowdownEntry } from '../protocol.js';
 
 export interface HandPlayer {
@@ -21,17 +27,6 @@ export interface HandPlayer {
   userId: string;
   displayName: string;
   stack: number;
-}
-
-export interface LegalMoves {
-  canFold: boolean;
-  canCheck: boolean;
-  canCall: boolean;
-  callAmount: number;
-  canRaise: boolean;
-  /** Raise-to totals for this street. */
-  minRaiseTo: number;
-  maxRaiseTo: number;
 }
 
 export type ApplyResult = { ok: true } | { ok: false; error: string };
@@ -401,6 +396,12 @@ export class HandMachine {
   personalState(userId: string, roomCode: string): PersonalTableState {
     const pub = this.publicState(roomCode);
     const mine = this.seats.find((s) => s.userId === userId);
-    return { ...pub, yourSeat: mine?.seat, yourHoleCards: mine?.hole ?? undefined };
+    const yourLegalMoves = mine && mine.seat === this.toAct ? this.legalMoves() : undefined;
+    return {
+      ...pub,
+      yourSeat: mine?.seat,
+      yourHoleCards: mine?.hole ?? undefined,
+      yourLegalMoves,
+    };
   }
 }

@@ -62,10 +62,12 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
         }
         case 'leave':
           return actor.leave(userId);
+        case 'action':
+          return actor.handleAction(userId, msg.intent);
         case 'ping':
           return send(ws, { t: 'pong' });
         default:
-          // join is handled at connection; action/rebuy land in later steps.
+          // join is handled at connection; rebuy lands in a later step.
           return send(ws, { t: 'error', code: 'unimplemented', message: `TODO: ${msg.t}` });
       }
     });
