@@ -5,7 +5,7 @@
 // NOTE: tokens in URLs can leak via logs/proxies. For production, swap this for
 // a short-lived single-use WS ticket issued over HTTPS. Fine for now.
 
-import { WebSocketServer, type WebSocket } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import type { Server, IncomingMessage } from 'node:http';
 import type { ClientMessage, ServerMessage } from '@allinn/shared';
 import { verifySession, type SessionClaims } from '../auth/jwt.js';
@@ -57,25 +57,32 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
       } catch {
         return send(ws, { t: 'error', code: 'bad_json', message: 'Invalid JSON' });
       }
-      switch (msg.t) {
-        case 'sit': {
-          const result = actor.sit(userId, claims.name, msg.seat);
-          if (!result.ok) send(ws, { t: 'error', code: 'sit', message: result.error });
-          return;
+      // Never let an action throw out of the handler — that would tear down the
+      // connection (e.g. a folding player getting disconnected).
+      try {
+        switch (msg.t) {
+          case 'sit': {
+            const result = actor.sit(userId, claims.name, msg.seat);
+            if (!result.ok) send(ws, { t: 'error', code: 'sit', message: result.error });
+            return;
+          }
+          case 'leave':
+            return actor.leave(userId);
+          case 'action':
+            return actor.handleAction(userId, msg.intent);
+          case 'rebuy':
+            return actor.rebuy(userId, msg.amount);
+          case 'ledger':
+            return actor.sendLedger();
+          case 'ping':
+            return send(ws, { t: 'pong' });
+          default:
+            // join is handled at connection.
+            return send(ws, { t: 'error', code: 'unimplemented', message: `TODO: ${msg.t}` });
         }
-        case 'leave':
-          return actor.leave(userId);
-        case 'action':
-          return actor.handleAction(userId, msg.intent);
-        case 'rebuy':
-          return actor.rebuy(userId, msg.amount);
-        case 'ledger':
-          return actor.sendLedger();
-        case 'ping':
-          return send(ws, { t: 'pong' });
-        default:
-          // join is handled at connection.
-          return send(ws, { t: 'error', code: 'unimplemented', message: `TODO: ${msg.t}` });
+      } catch (err) {
+        deps.log?.info({ err: String(err), t: msg.t, userId }, 'ws message handler error');
+        send(ws, { t: 'error', code: 'server', message: 'Server error' });
       }
     });
 
@@ -89,5 +96,12 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
 }
 
 function send(ws: WebSocket, msg: ServerMessage): void {
-  ws.send(JSON.stringify(msg));
+  // Guard against a half-closed socket: ws.send() throws if not OPEN, and that
+  // throw would otherwise bubble up and tear down the connection mid-broadcast.
+  if (ws.readyState !== WebSocket.OPEN) return;
+  try {
+    ws.send(JSON.stringify(msg));
+  } catch {
+    /* socket went away between the check and the send */
+  }
 }
