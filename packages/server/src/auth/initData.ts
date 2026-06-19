@@ -43,9 +43,9 @@ export function validateInitData(
   const params = new URLSearchParams(initData);
   const hash = params.get('hash');
   if (!hash) throw new InitDataError('Missing hash');
+  // Only `hash` is removed; every other field (including `signature`, when
+  // present in newer initData) is part of the data-check-string for the HMAC.
   params.delete('hash');
-  // `signature` (Ed25519 third-party validation) is not part of the HMAC check.
-  params.delete('signature');
 
   const dataCheckString = [...params.entries()]
     .map(([k, v]) => `${k}=${v}`)
