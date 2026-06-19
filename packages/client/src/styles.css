@@ -64,6 +64,15 @@ button.link:disabled { opacity: 0.4; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
 .toolbar button { flex: 1 1 auto; }
 
+.reconn {
+  text-align: center;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(231, 194, 92, 0.18);
+  color: var(--gold);
+}
+
 /* ── Cards (form / lobby panels) ── */
 .card {
   text-align: left;

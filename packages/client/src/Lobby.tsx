@@ -51,6 +51,9 @@ export function Lobby({
         ))}
       </ul>
 
+      {seated && state.seats.filter((s) => s.status !== 'empty').length < 2 && (
+        <p className="muted small">Waiting for another player to sit…</p>
+      )}
       <p className="muted small">{state.presentUserIds.length} online</p>
 
       <div className="toolbar">

@@ -68,10 +68,13 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
 
   const buyIn = room?.config.startingStack ?? 0;
   const overlay = ledger ? <Ledger ledger={ledger} onClose={clearLedger} /> : null;
+  const banner =
+    conn === 'connecting' && (table || room) ? <div className="reconn">reconnecting…</div> : null;
 
   if (mode === 'table' && table) {
     return (
       <>
+        {banner}
         <Table
           state={table}
           result={result}
@@ -88,6 +91,7 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
   if (room) {
     return (
       <>
+        {banner}
         <Lobby
           state={room}
           meId={userId}

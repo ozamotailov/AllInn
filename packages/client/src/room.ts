@@ -44,50 +44,83 @@ interface RoomStore {
   disconnect: () => void;
 }
 
-export const useRoom = create<RoomStore>((set, get) => ({
-  conn: 'idle',
-  mode: 'lobby',
-  connect: (roomCode, token) => {
-    if (get().socket) return;
-    set({ conn: 'connecting', error: undefined });
-    const socket = connectRoom(roomCode, token, (msg: ServerMessage) => {
-      switch (msg.t) {
-        case 'room':
-          set({ room: msg.state, mode: 'lobby', conn: 'connected', table: undefined, result: undefined });
-          break;
-        case 'state':
-          set((s) => ({
-            table: msg.state,
-            mode: 'table',
-            conn: 'connected',
-            // Keep the result during the showdown view; clear once a new hand deals.
-            result: msg.state.street === 'showdown' ? s.result : undefined,
-          }));
-          break;
-        case 'handResult':
-          set({ result: { board: msg.board, showdown: msg.showdown, fairness: msg.fairness } });
-          break;
-        case 'ledger':
-          set({ ledger: { rows: msg.rows, settlements: msg.settlements } });
-          break;
-        case 'error':
-          if (msg.code === 'auth' || msg.code === 'no_room') set({ conn: 'error', error: msg.message });
-          else set({ error: msg.message });
-          break;
-        default:
-          break;
-      }
+export const useRoom = create<RoomStore>((set, get) => {
+  // Reconnect bookkeeping (mobile Telegram drops the socket when backgrounded).
+  let roomCode = '';
+  let token = '';
+  let stopped = false; // intentional disconnect or fatal error → don't reconnect
+  let attempt = 0;
+  let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const handle = (msg: ServerMessage) => {
+    attempt = 0; // any message = healthy connection
+    switch (msg.t) {
+      case 'room':
+        set({ room: msg.state, mode: 'lobby', conn: 'connected', table: undefined, result: undefined });
+        break;
+      case 'state':
+        set((s) => ({
+          table: msg.state,
+          mode: 'table',
+          conn: 'connected',
+          result: msg.state.street === 'showdown' ? s.result : undefined,
+        }));
+        break;
+      case 'handResult':
+        set({ result: { board: msg.board, showdown: msg.showdown, fairness: msg.fairness } });
+        break;
+      case 'ledger':
+        set({ ledger: { rows: msg.rows, settlements: msg.settlements } });
+        break;
+      case 'error':
+        if (msg.code === 'auth' || msg.code === 'no_room') {
+          stopped = true; // pointless to retry
+          set({ conn: 'error', error: msg.message });
+        } else {
+          set({ error: msg.message });
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  const open = () => {
+    const socket = connectRoom(roomCode, token, handle, () => {
+      set({ socket: undefined });
+      if (stopped) return;
+      // Reconnect with capped backoff; keep showing the last table meanwhile.
+      const delay = Math.min(500 * 2 ** attempt, 5000);
+      attempt += 1;
+      set({ conn: 'connecting' });
+      reconnectTimer = setTimeout(open, delay);
     });
     set({ socket });
-  },
-  sit: (seat) => get().socket?.send({ t: 'sit', seat, buyIn: 0 }),
-  leave: () => get().socket?.send({ t: 'leave' }),
-  act: (intent) => get().socket?.send({ t: 'action', intent }),
-  rebuy: (amount) => get().socket?.send({ t: 'rebuy', amount }),
-  requestLedger: () => get().socket?.send({ t: 'ledger' }),
-  clearLedger: () => set({ ledger: undefined }),
-  disconnect: () => {
-    get().socket?.close();
-    set({ socket: undefined, room: undefined, table: undefined, result: undefined, conn: 'idle', mode: 'lobby' });
-  },
-}));
+  };
+
+  return {
+    conn: 'idle',
+    mode: 'lobby',
+    connect: (rc, t) => {
+      if (get().socket) return;
+      roomCode = rc;
+      token = t;
+      stopped = false;
+      attempt = 0;
+      set({ conn: 'connecting', error: undefined });
+      open();
+    },
+    sit: (seat) => get().socket?.send({ t: 'sit', seat, buyIn: 0 }),
+    leave: () => get().socket?.send({ t: 'leave' }),
+    act: (intent) => get().socket?.send({ t: 'action', intent }),
+    rebuy: (amount) => get().socket?.send({ t: 'rebuy', amount }),
+    requestLedger: () => get().socket?.send({ t: 'ledger' }),
+    clearLedger: () => set({ ledger: undefined }),
+    disconnect: () => {
+      stopped = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      get().socket?.close();
+      set({ socket: undefined, room: undefined, table: undefined, result: undefined, ledger: undefined, conn: 'idle', mode: 'lobby' });
+    },
+  };
+});
