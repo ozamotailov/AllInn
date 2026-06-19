@@ -32,8 +32,15 @@ export function loadEnv(): Env {
   };
 }
 
-/** Build a Direct Mini App invite link, or '' if bot identity isn't configured. */
+/**
+ * Build a Mini App invite link, or '' if the bot username isn't configured.
+ * - With APP_SHORT_NAME → a named Direct Mini App link (needs /newapp + its URL).
+ * - Without it → the bot's MAIN Mini App link (the menu-button app).
+ * Both pass `code` through as start_param.
+ */
 export function inviteLinkFor(code: string, env: Env): string {
-  if (!env.botUsername || !env.appShortName) return '';
-  return `https://t.me/${env.botUsername}/${env.appShortName}?startapp=${code}`;
+  if (!env.botUsername) return '';
+  return env.appShortName
+    ? `https://t.me/${env.botUsername}/${env.appShortName}?startapp=${code}`
+    : `https://t.me/${env.botUsername}?startapp=${code}`;
 }

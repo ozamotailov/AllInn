@@ -74,6 +74,12 @@ changes (or use a static domain / named tunnel).
   App* (empty initData). Launch it via the bot's menu button or `t.me/<bot>/play`.
 - **`POST /auth` 401 "Invalid hash"** — `BOT_TOKEN` isn't the token of the bot
   whose Mini App you opened.
+- **`t.me/<bot>/<shortname>?startapp=…` doesn't open, but the menu button does** —
+  the menu button is the *main* Mini App; the named app (`/newapp` short name)
+  is separate and needs its **own** Web App URL. Either set that URL in BotFather
+  (`/myapps` → app → Edit Web App URL), or leave `APP_SHORT_NAME` empty so invite
+  links use the main-app form `t.me/<bot>?startapp=…` (which the menu button
+  already powers).
 
 ## Notes & gotchas
 
