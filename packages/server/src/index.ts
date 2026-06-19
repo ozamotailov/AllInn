@@ -36,6 +36,10 @@ const start = async () => {
     }
     if (!env.botToken) {
       app.log.warn('BOT_TOKEN is empty — /auth will reject all Telegram logins.');
+    } else {
+      // The id before ':' is the bot's (public) user id — compare it with the
+      // bot whose Mini App you launch. A mismatch causes "Invalid hash".
+      app.log.info(`auth bot id: ${env.botToken.split(':')[0]}`);
     }
     if (env.allowDevAuth) {
       app.log.warn('ALLOW_DEV_AUTH=true — POST /auth/dev is OPEN. Local development only!');
