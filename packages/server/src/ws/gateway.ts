@@ -43,11 +43,12 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
 
     const userId = claims.sub;
     deps.log?.info({ userId, room: roomCode }, 'ws connected');
-    actor.attach({
+    const conn = {
       userId,
       displayName: claims.name,
-      send: (msg) => send(ws, msg),
-    });
+      send: (msg: ServerMessage) => send(ws, msg),
+    };
+    actor.attach(conn);
 
     ws.on('message', (raw) => {
       let msg: ClientMessage;
@@ -80,7 +81,7 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
 
     ws.on('close', () => {
       deps.log?.info({ userId, room: roomCode }, 'ws closed');
-      actor.detach(userId);
+      actor.detach(userId, conn);
     });
   });
 

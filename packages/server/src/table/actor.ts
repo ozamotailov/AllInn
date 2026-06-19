@@ -121,8 +121,11 @@ export class TableActor {
     this.maybeStartHand();
   }
 
-  detach(userId: string): void {
+  detach(userId: string, conn?: Connection): void {
     this.touch();
+    // Ignore a stale close whose connection was already replaced by a reconnect
+    // (otherwise the late close of the old socket evicts the new one).
+    if (conn && this.connections.get(userId) !== conn) return;
     this.connections.delete(userId);
     this.broadcast();
   }
