@@ -17,6 +17,7 @@ export default defineConfig({
       '/me': target,
       '/rooms': target,
       '/health': target,
+      '/clienterror': target,
       '/ws': { target, ws: true },
     },
   },

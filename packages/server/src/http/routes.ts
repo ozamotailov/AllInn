@@ -30,6 +30,13 @@ function issue(user: SessionUser, secret: string): AuthResponse {
 export function registerRoutes(app: FastifyInstance, env: Env, registry: RoomRegistry): void {
   app.get('/health', async () => ({ ok: true }));
 
+  // Diagnostics: the client beacons errors / page lifecycle here so they show up
+  // in the server console during on-device testing.
+  app.post('/clienterror', async (req, reply) => {
+    req.log.warn({ client: req.body }, 'client report');
+    return reply.code(204).send();
+  });
+
   // ── Auth (step 1) ──────────────────────────────────────────────────────────
   app.post('/auth', async (req, reply) => {
     const { initData = '' } = (req.body ?? {}) as Partial<AuthRequest>;
