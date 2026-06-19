@@ -29,7 +29,7 @@ const start = async () => {
     registerRoutes(app, env, registry);
 
     await app.listen({ port: env.port, host: '0.0.0.0' });
-    createGateway(app.server, { sessionSecret: env.sessionSecret, registry });
+    createGateway(app.server, { sessionSecret: env.sessionSecret, registry, log: app.log });
 
     if (!env.sessionSecret) {
       app.log.warn('SESSION_SECRET is empty — set it before any real use.');

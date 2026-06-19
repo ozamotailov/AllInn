@@ -14,6 +14,7 @@ import type { RoomRegistry } from '../rooms/registry.js';
 export interface GatewayDeps {
   sessionSecret: string;
   registry: RoomRegistry;
+  log?: { info(obj: object, msg?: string): void };
 }
 
 export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketServer {
@@ -41,6 +42,7 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
     }
 
     const userId = claims.sub;
+    deps.log?.info({ userId, room: roomCode }, 'ws connected');
     actor.attach({
       userId,
       displayName: claims.name,
@@ -76,7 +78,10 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
       }
     });
 
-    ws.on('close', () => actor.detach(userId));
+    ws.on('close', () => {
+      deps.log?.info({ userId, room: roomCode }, 'ws closed');
+      actor.detach(userId);
+    });
   });
 
   return wss;
