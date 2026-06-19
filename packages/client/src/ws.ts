@@ -6,8 +6,8 @@ export interface RoomSocket {
   close(): void;
 }
 
-const PING_MS = 3000; // keep the link warm so proxies/tunnels don't drop it
-const DEAD_MS = 7000; // no traffic at all for this long → treat the link as dead
+const PING_MS = 2000; // keep the link warm so proxies/tunnels don't drop it
+const DEAD_MS = 6000; // no traffic at all for this long → treat the link as dead
 
 /** Open a WebSocket to a room (auth + room as query params) with an app-level
  *  heartbeat. If the connection silently dies (no close event fires — common
