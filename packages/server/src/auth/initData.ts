@@ -86,3 +86,45 @@ export function validateInitData(
     startParam: params.get('start_param') ?? undefined,
   };
 }
+
+/**
+ * Non-secret diagnostics for a failing initData (enable with AUTH_DEBUG). Logs
+ * which fields arrived and which hashing variant *would* have matched — without
+ * exposing the token or the hash.
+ */
+export interface InitDataDiagnosis {
+  keys: string[];
+  hasSignature: boolean;
+  tokenLength: number;
+  matchExcludingSignature: boolean;
+  matchIncludingSignature: boolean;
+  matchTrimmedToken: boolean;
+  authDateAgeSec: number | null;
+}
+
+export function diagnoseInitData(initData: string, botToken: string): InitDataDiagnosis {
+  const base = new URLSearchParams(initData);
+  const hash = base.get('hash') ?? '';
+  const authDateRaw = base.get('auth_date');
+
+  const dcs = (excludeSignature: boolean): string => {
+    const p = new URLSearchParams(initData);
+    p.delete('hash');
+    if (excludeSignature) p.delete('signature');
+    return [...p.entries()].map(([k, v]) => `${k}=${v}`).sort().join('\n');
+  };
+  const hmac = (token: string, data: string): string => {
+    const secret = crypto.createHmac('sha256', 'WebAppData').update(token).digest();
+    return crypto.createHmac('sha256', secret).update(data).digest('hex');
+  };
+
+  return {
+    keys: [...base.keys()].sort(),
+    hasSignature: base.has('signature'),
+    tokenLength: botToken.length,
+    matchExcludingSignature: hmac(botToken, dcs(true)) === hash,
+    matchIncludingSignature: hmac(botToken, dcs(false)) === hash,
+    matchTrimmedToken: hmac(botToken.trim(), dcs(true)) === hash,
+    authDateAgeSec: authDateRaw ? Math.floor(Date.now() / 1000) - Number(authDateRaw) : null,
+  };
+}

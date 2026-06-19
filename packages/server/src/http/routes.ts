@@ -12,7 +12,7 @@ import {
   type CreateRoomResponse,
   type RoomInfo,
 } from '@allinn/shared';
-import { validateInitData, InitDataError, type TelegramUser } from '../auth/initData.js';
+import { validateInitData, InitDataError, diagnoseInitData, type TelegramUser } from '../auth/initData.js';
 import { signSession, SessionError } from '../auth/jwt.js';
 import { requireSession } from '../auth/bearer.js';
 import { type Env, inviteLinkFor } from '../env.js';
@@ -38,7 +38,12 @@ export function registerRoutes(app: FastifyInstance, env: Env, registry: RoomReg
       const user: SessionUser = { id: String(v.user.id), displayName: displayNameOf(v.user) };
       return issue(user, env.sessionSecret);
     } catch (e) {
-      if (e instanceof InitDataError) return reply.code(401).send({ error: e.message });
+      if (e instanceof InitDataError) {
+        if (env.authDebug) {
+          req.log.warn(diagnoseInitData(initData, env.botToken), `initData rejected: ${e.message}`);
+        }
+        return reply.code(401).send({ error: e.message });
+      }
       throw e;
     }
   });
