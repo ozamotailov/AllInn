@@ -52,14 +52,31 @@ export const useRoom = create<RoomStore>((set, get) => {
   let stopped = false; // intentional disconnect or fatal error → don't reconnect
   let attempt = 0;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+  // Delay table→lobby switches so a reconnect / between-hands gap doesn't flash
+  // the lobby before the next hand's state arrives.
+  let lobbyTimer: ReturnType<typeof setTimeout> | undefined;
 
   const handle = (msg: ServerMessage) => {
     attempt = 0; // any message = healthy connection
     switch (msg.t) {
       case 'room':
-        set({ room: msg.state, mode: 'lobby', conn: 'connected', table: undefined, result: undefined });
+        set({ room: msg.state, conn: 'connected' });
+        if (get().mode !== 'table') {
+          // initial entry / already in lobby → show it now
+          set({ mode: 'lobby', table: undefined, result: undefined });
+        } else if (!lobbyTimer) {
+          // was at the table → wait a beat; if a hand's state arrives we stay put
+          lobbyTimer = setTimeout(() => {
+            lobbyTimer = undefined;
+            set({ mode: 'lobby', table: undefined, result: undefined });
+          }, 1200);
+        }
         break;
       case 'state':
+        if (lobbyTimer) {
+          clearTimeout(lobbyTimer);
+          lobbyTimer = undefined;
+        }
         set((s) => ({
           table: msg.state,
           mode: 'table',
@@ -122,6 +139,7 @@ export const useRoom = create<RoomStore>((set, get) => {
     disconnect: () => {
       stopped = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (lobbyTimer) clearTimeout(lobbyTimer);
       get().socket?.close();
       set({ socket: undefined, room: undefined, table: undefined, result: undefined, ledger: undefined, conn: 'idle', mode: 'lobby' });
     },
