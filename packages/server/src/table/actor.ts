@@ -52,6 +52,8 @@ export class TableActor {
   private departed: DepartedEntry[] = [];
   /** Set by the registry to persist between-hand state after each change. */
   onPersist?: () => void;
+  /** Optional logger (set by the registry) for hand lifecycle diagnostics. */
+  log?: (obj: object, msg: string) => void;
 
   constructor(
     readonly roomCode: string,
@@ -302,10 +304,17 @@ export class TableActor {
     if (this.phase !== 'lobby' || this.intermission) return;
     // Only connected seated players with chips — avoids looping hands in an
     // abandoned room (auto-fold would otherwise play it out forever).
-    const ready = this.seats.filter(
-      (s) => s.status === 'seated' && s.stack > 0 && this.connections.has(s.userId as string),
-    );
-    if (ready.length < 2) return;
+    const seatedWithChips = this.seats.filter((s) => s.status === 'seated' && s.stack > 0);
+    const ready = seatedWithChips.filter((s) => this.connections.has(s.userId as string));
+    if (ready.length < 2) {
+      if (seatedWithChips.length > 0) {
+        this.log?.(
+          { room: this.roomCode, seatedWithChips: seatedWithChips.length, connected: ready.length },
+          'not starting next hand: need 2 connected seated players with chips',
+        );
+      }
+      return;
+    }
 
     this.buttonSeat = this.nextButton(ready.map((s) => s.seat));
 
@@ -330,6 +339,7 @@ export class TableActor {
     );
     this.phase = 'playing';
     this.hand.start();
+    this.log?.({ room: this.roomCode, players: ready.length, button: this.buttonSeat }, 'hand started');
     if (this.hand.isComplete()) this.finishHand();
     else {
       this.armTimer();

@@ -26,12 +26,15 @@ export interface RegistryOptions {
   sweepMs?: number;
   /** Called with each evicted room code (e.g. for logging). */
   onEvict?: (code: string) => void;
+  /** Optional logger passed to each table actor for hand lifecycle diagnostics. */
+  log?: (obj: object, msg: string) => void;
 }
 
 export class RoomRegistry {
   private readonly rooms = new Map<string, TableActor>();
   private readonly ttlMs: number;
   private readonly onEvict?: (code: string) => void;
+  private readonly log?: (obj: object, msg: string) => void;
   private readonly sweepTimer: ReturnType<typeof setInterval>;
 
   constructor(
@@ -40,6 +43,7 @@ export class RoomRegistry {
   ) {
     this.ttlMs = opts.ttlMs ?? 30 * 60 * 1000;
     this.onEvict = opts.onEvict;
+    this.log = opts.log;
 
     for (const snap of store.loadAll()) {
       const actor = new TableActor(snap.code, snap.config, snap.hostId, {
@@ -95,5 +99,6 @@ export class RoomRegistry {
 
   private wirePersistence(actor: TableActor): void {
     actor.onPersist = () => this.store.save(actor.toSnapshot());
+    actor.log = this.log;
   }
 }
