@@ -75,6 +75,7 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
         <Table
           state={table}
           result={result}
+          actionSeconds={room?.config.actionTimerSeconds ?? 20}
           onAct={act}
           onLeave={leave}
           onSettle={requestLedger}
