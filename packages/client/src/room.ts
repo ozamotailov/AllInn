@@ -11,6 +11,7 @@ import type {
   FairnessReveal,
 } from '@allinn/shared';
 import { connectRoom, type RoomSocket } from './ws.js';
+import { report } from './report.js';
 
 type ConnState = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -86,7 +87,9 @@ export const useRoom = create<RoomStore>((set, get) => {
   };
 
   const open = () => {
-    const socket = connectRoom(roomCode, token, handle, () => {
+    report({ kind: 'wsopen', attempt });
+    const socket = connectRoom(roomCode, token, handle, (code, reason) => {
+      report({ kind: 'wsclose', code, reason, stopped, attempt });
       set({ socket: undefined });
       if (stopped) return;
       // Reconnect with capped backoff; keep showing the last table meanwhile.

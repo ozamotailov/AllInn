@@ -11,7 +11,7 @@ export function connectRoom(
   roomCode: string,
   token: string,
   onMessage: (msg: ServerMessage) => void,
-  onClose?: () => void,
+  onClose?: (code: number, reason: string) => void,
 ): RoomSocket {
   // Same-origin by default (API_URL empty) → derive ws(s):// from the page origin.
   const httpBase = API_URL || window.location.origin;
@@ -27,7 +27,7 @@ export function connectRoom(
       /* ignore malformed frames */
     }
   };
-  ws.onclose = () => onClose?.();
+  ws.onclose = (ev: CloseEvent) => onClose?.(ev.code, ev.reason);
 
   return {
     send: (msg) => {
