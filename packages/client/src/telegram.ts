@@ -16,6 +16,7 @@ interface TelegramWebApp {
   setHeaderColor?(color: string): void;
   setBackgroundColor?(color: string): void;
   disableVerticalSwipes?(): void;
+  showConfirm?(message: string, callback: (ok: boolean) => void): void;
   HapticFeedback?: HapticFeedback;
 }
 
@@ -57,6 +58,21 @@ export function haptic(kind: Haptic): void {
   } catch {
     /* ignore */
   }
+}
+
+/** Native confirm dialog (Telegram's if available, else the browser's). */
+export function confirmDialog(message: string): Promise<boolean> {
+  const wa = webApp();
+  if (wa?.showConfirm) {
+    return new Promise((resolve) => {
+      try {
+        wa.showConfirm!(message, (ok) => resolve(ok));
+      } catch {
+        resolve(window.confirm(message));
+      }
+    });
+  }
+  return Promise.resolve(window.confirm(message));
 }
 
 /** Raw initData to send to the backend for HMAC validation. */

@@ -61,8 +61,9 @@ button.link {
 }
 button.link:disabled { opacity: 0.4; }
 
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .toolbar button { flex: 1 1 auto; }
+.toolbar .waiting { flex: 0 0 auto; padding: 0 4px; }
 
 .reconn {
   text-align: center;

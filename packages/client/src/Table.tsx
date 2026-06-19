@@ -9,7 +9,7 @@ import type {
   FairnessReveal,
 } from '@allinn/shared';
 import { CardView } from './Card.js';
-import { haptic } from './telegram.js';
+import { haptic, confirmDialog } from './telegram.js';
 import type { HandResultView } from './room.js';
 
 function useCountdown(deadline?: number): number | undefined {
@@ -105,9 +105,17 @@ export function Table({
         />
       ) : (
         <div className="toolbar">
+          <span className="muted small waiting">Waiting…</span>
           <button className="ghost" onClick={onSettle}>Settle up</button>
           <button className="ghost" onClick={onRebuy}>Rebuy</button>
-          <button className="ghost" onClick={onLeave}>Leave</button>
+          <button
+            className="ghost"
+            onClick={async () => {
+              if (await confirmDialog('Leave the table?')) onLeave();
+            }}
+          >
+            Leave
+          </button>
         </div>
       )}
     </div>

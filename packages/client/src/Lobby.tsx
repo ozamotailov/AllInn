@@ -1,4 +1,5 @@
 import type { RoomPublicState } from '@allinn/shared';
+import { confirmDialog } from './telegram.js';
 
 export function Lobby({
   state,
@@ -65,7 +66,12 @@ export function Lobby({
             <button className="ghost" onClick={onRebuy}>
               Rebuy +{config.startingStack}
             </button>
-            <button className="ghost" onClick={onLeave}>
+            <button
+              className="ghost"
+              onClick={async () => {
+                if (await confirmDialog('Leave your seat?')) onLeave();
+              }}
+            >
               Leave seat
             </button>
           </>
