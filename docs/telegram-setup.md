@@ -62,10 +62,23 @@ changes (or use a static domain / named tunnel).
   turn. After a hand, **Settle up** shows who-pays-whom; **Verify deck** checks
   the provably-fair commitment.
 
+## Troubleshooting
+
+- **"Sign-in failed: Failed to fetch", server logs empty** — the request was
+  blocked before reaching the backend, almost always **mixed content**: the page
+  is https (tunnel) but the client tried an `http://localhost` API URL. Fix:
+  tunnel **port 5173** (Vite, which proxies the API), and make sure
+  `packages/client/.env` does **not** set `VITE_API_URL` to an `http://` URL
+  (leave it empty for same-origin). Then restart `npm run dev:client`.
+- **`POST /auth/dev` 403 inside Telegram** — the app wasn't opened *as a Mini
+  App* (empty initData). Launch it via the bot's menu button or `t.me/<bot>/play`.
+- **`POST /auth` 401 "Invalid hash"** — `BOT_TOKEN` isn't the token of the bot
+  whose Mini App you opened.
+
 ## Notes & gotchas
 
 - **HTTPS is mandatory** for Telegram Web App URLs — always use the tunnel URL,
-  never `localhost`.
+  never `localhost`. Tunnel **port 5173** (Vite), not 8080.
 - Keep `SESSION_SECRET` stable; rooms persist in SQLite (`DB_PATH`) across restarts.
 - Tunnel URL changed? Re-set the Web App URL in BotFather and re-open the app.
 - `ALLOW_DEV_AUTH` must be `false` in real use — it's an auth bypass for browser dev.
