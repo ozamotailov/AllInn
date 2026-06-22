@@ -275,6 +275,17 @@ button.link:disabled { opacity: 0.4; }
   50%      { box-shadow: 0 0 0 4px var(--gold), 0 0 22px rgba(231, 194, 92, 1); }
 }
 .pseat.winner .avatar { animation: winnerglow 0.9s ease-in-out infinite; }
+.pseat .reveal {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  z-index: 4;
+}
+.pseat .reveal .playing-card { min-width: 22px; height: 30px; font-size: 0.7rem; padding: 0 3px; }
+
 .pseat .won {
   position: absolute;
   top: -14px;

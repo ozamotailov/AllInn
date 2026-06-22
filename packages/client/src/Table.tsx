@@ -117,6 +117,7 @@ export function Table({
             pos={seatPos(j, myIndex, n)}
             bet={betOffset(j, myIndex, n)}
             won={result?.payouts?.[p.seat] ?? 0}
+            reveal={result?.showdown.find((e) => e.seat === p.seat)?.holeCards}
             state={state}
             secsLeft={secsLeft}
           />
@@ -178,6 +179,7 @@ function Seat({
   pos,
   bet,
   won,
+  reveal,
   state,
   secsLeft,
 }: {
@@ -185,6 +187,7 @@ function Seat({
   pos: { left: string; top: string };
   bet: { x: number; y: number };
   won: number;
+  reveal?: [Card, Card];
   state: PersonalTableState;
   secsLeft?: number;
 }) {
@@ -198,6 +201,12 @@ function Seat({
       style={pos}
     >
       {winner && <div className="won">+{won}</div>}
+      {reveal && !you && (
+        <div className="reveal">
+          <CardView key={cardKey(reveal[0])} card={reveal[0]} />
+          <CardView key={cardKey(reveal[1])} card={reveal[1]} />
+        </div>
+      )}
       <div className="avatar">
         {initial}
         {p.seat === state.buttonSeat && <span className="dealer">D</span>}
