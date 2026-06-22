@@ -19,6 +19,7 @@ export interface HandResultView {
   board: Card[];
   showdown: ShowdownEntry[];
   fairness?: FairnessReveal;
+  payouts?: Record<number, number>;
 }
 
 export interface LedgerView {
@@ -85,7 +86,14 @@ export const useRoom = create<RoomStore>((set, get) => {
         }));
         break;
       case 'handResult':
-        set({ result: { board: msg.board, showdown: msg.showdown, fairness: msg.fairness } });
+        set({
+          result: {
+            board: msg.board,
+            showdown: msg.showdown,
+            fairness: msg.fairness,
+            payouts: msg.payouts,
+          },
+        });
         break;
       case 'ledger':
         set({ ledger: { rows: msg.rows, settlements: msg.settlements } });

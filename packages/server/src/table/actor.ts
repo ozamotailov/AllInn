@@ -358,7 +358,7 @@ export class TableActor {
     this.persist();
     const result = this.hand.result();
     this.broadcast(); // final hand state (showdown board + stacks)
-    this.broadcastResult(result.board, result.showdown, this.fairness);
+    this.broadcastResult(result.board, result.showdown, this.fairness, result.payouts);
     this.scheduleIntermission();
   }
 
@@ -411,8 +411,13 @@ export class TableActor {
     for (const conn of this.connections.values()) this.sendStateTo(conn);
   }
 
-  private broadcastResult(board: Card[], showdown: ShowdownEntry[], fairness?: FairnessReveal): void {
-    const msg: ServerMessage = { t: 'handResult', board, showdown, fairness };
+  private broadcastResult(
+    board: Card[],
+    showdown: ShowdownEntry[],
+    fairness?: FairnessReveal,
+    payouts?: Record<number, number>,
+  ): void {
+    const msg: ServerMessage = { t: 'handResult', board, showdown, fairness, payouts };
     for (const conn of this.connections.values()) conn.send(msg);
   }
 }

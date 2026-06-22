@@ -30,6 +30,14 @@ function seatPos(j: number, myIndex: number, n: number): { left: string; top: st
   return { left: `${50 + 42 * Math.cos(ang)}%`, top: `${50 + 43 * Math.sin(ang)}%` };
 }
 
+// Offset (px) from a seat toward the table center — where its bet chips sit.
+function betOffset(j: number, myIndex: number, n: number): { x: number; y: number } {
+  const rel = (j - myIndex + n) % n;
+  const ang = Math.PI / 2 + (rel * 2 * Math.PI) / n;
+  const R = 48;
+  return { x: -Math.cos(ang) * R, y: -Math.sin(ang) * R };
+}
+
 // Key cards by identity so only newly dealt cards animate in (existing ones don't replay).
 const cardKey = (c: Card): string => `${c.rank}${c.suit}`;
 
@@ -103,7 +111,15 @@ export function Table({
         </div>
 
         {players.map((p, j) => (
-          <Seat key={p.seat} p={p} pos={seatPos(j, myIndex, n)} state={state} secsLeft={secsLeft} />
+          <Seat
+            key={p.seat}
+            p={p}
+            pos={seatPos(j, myIndex, n)}
+            bet={betOffset(j, myIndex, n)}
+            won={result?.payouts?.[p.seat] ?? 0}
+            state={state}
+            secsLeft={secsLeft}
+          />
         ))}
 
         {chips.map((c) => (
@@ -160,19 +176,28 @@ export function Table({
 function Seat({
   p,
   pos,
+  bet,
+  won,
   state,
   secsLeft,
 }: {
   p: PublicPlayer;
   pos: { left: string; top: string };
+  bet: { x: number; y: number };
+  won: number;
   state: PersonalTableState;
   secsLeft?: number;
 }) {
   const you = p.seat === state.yourSeat;
   const turn = p.seat === state.toActSeat;
+  const winner = won > 0;
   const initial = (p.displayName ?? '?').trim().slice(0, 1).toUpperCase() || '?';
   return (
-    <div className={`pseat ${p.status} ${turn ? 'turn' : ''} ${you ? 'you' : ''}`} style={pos}>
+    <div
+      className={`pseat ${p.status} ${turn ? 'turn' : ''} ${you ? 'you' : ''} ${winner ? 'winner' : ''}`}
+      style={pos}
+    >
+      {winner && <div className="won">+{won}</div>}
       <div className="avatar">
         {initial}
         {p.seat === state.buttonSeat && <span className="dealer">D</span>}
@@ -184,7 +209,14 @@ function Seat({
           {turn && secsLeft !== undefined ? ` · ${secsLeft}s` : ''}
         </div>
       </div>
-      {p.committed > 0 && <div className="bet" key={p.committed}>{p.committed}</div>}
+      {p.committed > 0 && (
+        <div
+          className="bet-pos"
+          style={{ transform: `translate(-50%, -50%) translate(${bet.x}px, ${bet.y}px)` }}
+        >
+          <div className="bet" key={p.committed}>{p.committed}</div>
+        </div>
+      )}
     </div>
   );
 }

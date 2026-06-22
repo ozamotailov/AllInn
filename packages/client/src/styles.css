@@ -262,6 +262,32 @@ button.link:disabled { opacity: 0.4; }
 }
 .pseat.turn .avatar { animation: turnglow 1.2s ease-in-out infinite; }
 
+/* Bet chips sit toward the pot (wrapper positions, inner chip animates). */
+.bet-pos { position: absolute; left: 50%; top: 50%; }
+
+/* Winner highlight on showdown. */
+@keyframes winnerglow {
+  0%, 100% { box-shadow: 0 0 0 3px var(--gold), 0 0 8px rgba(231, 194, 92, 0.6); }
+  50%      { box-shadow: 0 0 0 4px var(--gold), 0 0 22px rgba(231, 194, 92, 1); }
+}
+.pseat.winner .avatar { animation: winnerglow 0.9s ease-in-out infinite; }
+.pseat .won {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold);
+  color: #16202b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+  z-index: 6;
+  animation: chippop 0.25s ease both;
+}
+
 /* ── Action bar ── */
 .actionbar { display: flex; flex-direction: column; gap: 8px; }
 .timer { height: 5px; border-radius: 3px; background: rgba(127, 127, 127, 0.25); overflow: hidden; }

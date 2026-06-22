@@ -29,7 +29,14 @@ export interface ShowdownEntry {
 export type ServerMessage =
   | { t: 'room'; state: RoomPublicState }
   | { t: 'state'; state: PersonalTableState }
-  | { t: 'handResult'; board: Card[]; showdown: ShowdownEntry[]; fairness?: FairnessReveal }
+  | {
+      t: 'handResult';
+      board: Card[];
+      showdown: ShowdownEntry[];
+      fairness?: FairnessReveal;
+      /** seat → chips won this hand (covers uncontested wins too). */
+      payouts?: Record<number, number>;
+    }
   | { t: 'ledger'; rows: LedgerRow[]; settlements: Settlement[] }
   | { t: 'error'; code: string; message: string }
   | { t: 'pong' };
