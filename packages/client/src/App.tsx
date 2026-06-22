@@ -37,7 +37,10 @@ export function App() {
 function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="screen">
-      <h1>🃏 AllInn</h1>
+      <header className="brand">
+        <img className="brand-logo" src="/logo.png" alt="" />
+        <span className="brand-name">All-Inn</span>
+      </header>
       {children}
     </main>
   );
