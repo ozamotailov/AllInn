@@ -19,6 +19,7 @@ const env = loadEnv();
 const app = Fastify({ logger: true });
 const registry = new RoomRegistry(new SqliteRoomStore(env.dbPath), {
   ttlMs: env.roomTtlMinutes * 60 * 1000,
+  abandonMs: env.roomAbandonMinutes * 60 * 1000,
   onEvict: (code) => app.log.info({ code }, 'evicted idle room'),
   log: (obj, msg) => app.log.info(obj, msg),
 });

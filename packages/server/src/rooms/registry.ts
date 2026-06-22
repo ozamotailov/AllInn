@@ -20,8 +20,11 @@ function generateCode(length = 6): string {
 }
 
 export interface RegistryOptions {
-  /** Evict rooms idle (no connections) longer than this. Default 30 min. */
+  /** Evict EMPTY rooms (no seated players) idle longer than this. Default 30 min. */
   ttlMs?: number;
+  /** Evict rooms that HAVE seated players but no connections after this long
+   *  (players may gather slowly). Default 12 h. */
+  abandonMs?: number;
   /** Sweep interval. Default 60s. */
   sweepMs?: number;
   /** Called with each evicted room code (e.g. for logging). */
@@ -33,6 +36,7 @@ export interface RegistryOptions {
 export class RoomRegistry {
   private readonly rooms = new Map<string, TableActor>();
   private readonly ttlMs: number;
+  private readonly abandonMs: number;
   private readonly onEvict?: (code: string) => void;
   private readonly log?: (obj: object, msg: string) => void;
   private readonly sweepTimer: ReturnType<typeof setInterval>;
@@ -42,6 +46,7 @@ export class RoomRegistry {
     opts: RegistryOptions = {},
   ) {
     this.ttlMs = opts.ttlMs ?? 30 * 60 * 1000;
+    this.abandonMs = opts.abandonMs ?? 12 * 60 * 60 * 1000;
     this.onEvict = opts.onEvict;
     this.log = opts.log;
 
@@ -81,7 +86,8 @@ export class RoomRegistry {
   evictIdle(): string[] {
     const evicted: string[] = [];
     for (const [code, actor] of this.rooms) {
-      if (actor.connectionCount === 0 && actor.idleMs >= this.ttlMs) {
+      const ttl = actor.hasPlayers ? this.abandonMs : this.ttlMs;
+      if (actor.connectionCount === 0 && actor.idleMs >= ttl) {
         actor.dispose();
         this.rooms.delete(code);
         this.store.remove(code);

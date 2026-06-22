@@ -109,6 +109,12 @@ export class TableActor {
     return this.connections.size;
   }
 
+  /** True if anyone has taken a seat — such rooms get a long abandon timeout
+   *  (players may gather slowly even while the host's app is backgrounded). */
+  get hasPlayers(): boolean {
+    return this.seats.some((s) => s.status !== 'empty');
+  }
+
   /** Stop all timers — called by the registry before evicting an idle room. */
   dispose(): void {
     this.clearTimer();

@@ -27,6 +27,9 @@ export function Lobby({
   const seated = state.seats.some((s) => s.userId === meId);
   const isHost = meId === state.hostId;
   const running = state.running;
+  const readyCount = state.seats.filter(
+    (s) => s.status !== 'empty' && s.stack > 0 && s.userId && state.presentUserIds.includes(s.userId),
+  ).length;
 
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -82,9 +85,11 @@ export function Lobby({
             ⏸ Pause game
           </button>
         ) : (
-          <button className="primary" onClick={onStart}>
-            ▶ Start game
-          </button>
+          readyCount >= 2 && (
+            <button className="primary" onClick={onStart}>
+              ▶ Start game
+            </button>
+          )
         )
       ) : (
         !running && <p className="muted small">⏸ Game paused — waiting for the host…</p>

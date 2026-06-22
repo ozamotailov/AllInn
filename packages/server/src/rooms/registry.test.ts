@@ -25,6 +25,17 @@ test('evicts an idle room with no connections and removes it from the store', ()
   reg.stop();
 });
 
+test('keeps a room with seated players on the long abandon timeout', () => {
+  const store = new SqliteRoomStore(':memory:');
+  // Empty rooms evict immediately (ttl 0); rooms with players wait abandonMs.
+  const reg = new RoomRegistry(store, { ttlMs: 0, abandonMs: 60_000, sweepMs: 3_600_000 });
+  const actor = reg.create(cfg, 'host1');
+  actor.sit('host1', 'Host', 0); // host takes a seat, then no connections
+  assert.deepEqual(reg.evictIdle(), []); // seated → not evicted on the short ttl
+  assert.equal(reg.size, 1);
+  reg.stop();
+});
+
 test('keeps a room that has a live connection', () => {
   const reg = newRegistry(0);
   const actor = reg.create(cfg, 'host1');

@@ -12,8 +12,10 @@ export interface Env {
   appShortName: string;
   /** SQLite file path for room persistence. */
   dbPath: string;
-  /** Evict rooms with no connections after this many minutes idle. */
+  /** Evict EMPTY rooms (no seated players) with no connections after this idle. */
   roomTtlMinutes: number;
+  /** Evict rooms that have seated players but no connections after this idle. */
+  roomAbandonMinutes: number;
   /** Log non-secret diagnostics when initData validation fails. */
   authDebug: boolean;
 }
@@ -28,6 +30,7 @@ export function loadEnv(): Env {
     appShortName: process.env.APP_SHORT_NAME ?? '',
     dbPath: process.env.DB_PATH ?? 'allinn.db',
     roomTtlMinutes: Number(process.env.ROOM_TTL_MINUTES ?? 30),
+    roomAbandonMinutes: Number(process.env.ROOM_ABANDON_MINUTES ?? 720),
     authDebug: process.env.AUTH_DEBUG === 'true',
   };
 }
