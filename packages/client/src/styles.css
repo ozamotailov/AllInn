@@ -293,6 +293,19 @@ button.link:disabled { opacity: 0.4; }
 .timer { height: 5px; border-radius: 3px; background: rgba(127, 127, 127, 0.25); overflow: hidden; }
 .timer-fill { height: 100%; background: var(--gold); transition: width 0.5s linear; }
 .raise-slider { width: 100%; accent-color: var(--gold); }
+.raise-row { display: flex; gap: 8px; align-items: center; }
+.raise-row button { flex: 0 0 auto; }
+.raise-num {
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  text-align: center;
+}
 .actions { display: flex; gap: 8px; }
 .act {
   flex: 1;

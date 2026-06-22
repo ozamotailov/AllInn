@@ -34,7 +34,7 @@ function seatPos(j: number, myIndex: number, n: number): { left: string; top: st
 function betOffset(j: number, myIndex: number, n: number): { x: number; y: number } {
   const rel = (j - myIndex + n) % n;
   const ang = Math.PI / 2 + (rel * 2 * Math.PI) / n;
-  const R = 48;
+  const R = 64;
   return { x: -Math.cos(ang) * R, y: -Math.sin(ang) * R };
 }
 
@@ -232,8 +232,10 @@ function ActionBar({
   actionSeconds: number;
   onAct: (intent: PlayerActionIntent) => void;
 }) {
-  const [raiseTo, setRaiseTo] = useState(lm.minRaiseTo);
-  const clamped = Math.min(Math.max(raiseTo, lm.minRaiseTo), lm.maxRaiseTo);
+  const [raiseTo, setRaiseTo] = useState<number>(lm.minRaiseTo);
+  const safe = Number.isFinite(raiseTo) ? raiseTo : lm.minRaiseTo;
+  const clamped = Math.min(Math.max(safe, lm.minRaiseTo), lm.maxRaiseTo);
+  const hasRange = lm.maxRaiseTo > lm.minRaiseTo;
   const frac = actionSeconds > 0 && secsLeft !== undefined ? Math.min(1, secsLeft / actionSeconds) : 0;
 
   return (
@@ -241,15 +243,36 @@ function ActionBar({
       <div className="timer">
         <div className="timer-fill" style={{ width: `${frac * 100}%` }} />
       </div>
-      {lm.canRaise && lm.maxRaiseTo > lm.minRaiseTo && (
-        <input
-          className="raise-slider"
-          type="range"
-          min={lm.minRaiseTo}
-          max={lm.maxRaiseTo}
-          value={clamped}
-          onChange={(e) => setRaiseTo(Number(e.target.value))}
-        />
+      {lm.canRaise && (
+        <>
+          {hasRange && (
+            <input
+              className="raise-slider"
+              type="range"
+              min={lm.minRaiseTo}
+              max={lm.maxRaiseTo}
+              value={clamped}
+              onChange={(e) => setRaiseTo(Number(e.target.value))}
+            />
+          )}
+          <div className="raise-row">
+            <input
+              className="raise-num"
+              type="number"
+              inputMode="numeric"
+              min={lm.minRaiseTo}
+              max={lm.maxRaiseTo}
+              value={Number.isFinite(raiseTo) ? raiseTo : ''}
+              onChange={(e) => setRaiseTo(e.target.value === '' ? NaN : Number(e.target.value))}
+              onBlur={() => setRaiseTo(clamped)}
+            />
+            {hasRange && (
+              <button type="button" className="ghost" onClick={() => setRaiseTo(lm.maxRaiseTo)}>
+                All-in
+              </button>
+            )}
+          </div>
+        </>
       )}
       <div className="actions">
         {lm.canFold && (
