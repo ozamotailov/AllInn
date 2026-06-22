@@ -213,6 +213,55 @@ button.link:disabled { opacity: 0.4; }
 .hole { display: flex; gap: 6px; justify-content: center; }
 .hole .playing-card { min-width: 46px; height: 64px; font-size: 1.05rem; }
 
+/* ── Animations ── */
+@keyframes deal {
+  from { opacity: 0; transform: translateY(-16px) scale(0.82) rotate(-7deg); }
+  to   { opacity: 1; transform: none; }
+}
+/* Real cards (red/black) animate in on mount; keyed by content so only new ones replay. */
+.playing-card.red,
+.playing-card.black { animation: deal 0.3s ease both; }
+
+@keyframes chippop {
+  0%   { transform: scale(0.2); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.pseat .bet { animation: chippop 0.22s ease both; }
+
+@keyframes potpulse {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.pot { animation: potpulse 0.3s ease; }
+
+@keyframes flychip {
+  from { left: var(--fx); top: var(--fy); opacity: 1; }
+  to   { left: 50%; top: 43%; opacity: 0.15; }
+}
+.flychip {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 5;
+  animation: flychip 0.5s ease-in forwards;
+}
+
+@keyframes turnglow {
+  0%, 100% { box-shadow: 0 0 0 3px var(--gold), 0 0 6px rgba(231, 194, 92, 0.5); }
+  50%      { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(231, 194, 92, 0.95); }
+}
+.pseat.turn .avatar { animation: turnglow 1.2s ease-in-out infinite; }
+
 /* ── Action bar ── */
 .actionbar { display: flex; flex-direction: column; gap: 8px; }
 .timer { height: 5px; border-radius: 3px; background: rgba(127, 127, 127, 0.25); overflow: hidden; }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { verifyReveal } from '@allinn/shared';
 import type {
   PersonalTableState,
@@ -21,6 +21,22 @@ function useCountdown(deadline?: number): number | undefined {
   }, [deadline]);
   if (!deadline) return undefined;
   return Math.max(0, Math.ceil((deadline - now) / 1000));
+}
+
+/** Seat j on the table ellipse, rotated so "you" sit at the bottom. */
+function seatPos(j: number, myIndex: number, n: number): { left: string; top: string } {
+  const rel = (j - myIndex + n) % n;
+  const ang = Math.PI / 2 + (rel * 2 * Math.PI) / n;
+  return { left: `${50 + 42 * Math.cos(ang)}%`, top: `${50 + 43 * Math.sin(ang)}%` };
+}
+
+// Key cards by identity so only newly dealt cards animate in (existing ones don't replay).
+const cardKey = (c: Card): string => `${c.rank}${c.suit}`;
+
+interface FlyChip {
+  id: number;
+  left: string;
+  top: string;
 }
 
 export function Table({
@@ -48,12 +64,22 @@ export function Table({
   const n = players.length;
   const myIndex = Math.max(0, players.findIndex((p) => p.seat === state.yourSeat));
 
-  // Place seat j on the table ellipse, rotated so "you" sit at the bottom.
-  const seatPos = (j: number) => {
-    const rel = (j - myIndex + n) % n;
-    const ang = Math.PI / 2 + (rel * 2 * Math.PI) / n;
-    return { left: `${50 + 42 * Math.cos(ang)}%`, top: `${50 + 43 * Math.sin(ang)}%` };
-  };
+  // Fly a gold chip from a seat to the pot whenever that seat's committed grows.
+  const prevBets = useRef<Record<number, number>>({});
+  const chipId = useRef(0);
+  const [chips, setChips] = useState<FlyChip[]>([]);
+  useEffect(() => {
+    const spawned: FlyChip[] = [];
+    players.forEach((p, j) => {
+      const before = prevBets.current[p.seat] ?? 0;
+      if (p.committed > before) {
+        const pos = seatPos(j, myIndex, n);
+        spawned.push({ id: ++chipId.current, left: pos.left, top: pos.top });
+      }
+      prevBets.current[p.seat] = p.committed;
+    });
+    if (spawned.length) setChips((cs) => [...cs, ...spawned]);
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const act = (intent: PlayerActionIntent) => {
     haptic('tap');
@@ -64,12 +90,12 @@ export function Table({
     <div className="poker">
       <div className="felt">
         <div className="center">
-          <div className="pot">
-            {potTotal > 0 ? `Pot ${potTotal}` : ' '}
+          <div className="pot" key={potTotal}>
+            {potTotal > 0 ? `Pot ${potTotal}` : ' '}
             <span className="muted small"> · {state.street}</span>
           </div>
           <div className="board">
-            {state.board.map((c, i) => <CardView key={i} card={c} />)}
+            {state.board.map((c) => <CardView key={cardKey(c)} card={c} />)}
             {Array.from({ length: 5 - state.board.length }).map((_, i) => (
               <span key={`ph${i}`} className="playing-card placeholder" />
             ))}
@@ -77,13 +103,22 @@ export function Table({
         </div>
 
         {players.map((p, j) => (
-          <Seat key={p.seat} p={p} pos={seatPos(j)} state={state} secsLeft={secsLeft} />
+          <Seat key={p.seat} p={p} pos={seatPos(j, myIndex, n)} state={state} secsLeft={secsLeft} />
+        ))}
+
+        {chips.map((c) => (
+          <div
+            key={c.id}
+            className="flychip"
+            style={{ '--fx': c.left, '--fy': c.top } as unknown as CSSProperties}
+            onAnimationEnd={() => setChips((cs) => cs.filter((x) => x.id !== c.id))}
+          />
         ))}
       </div>
 
       <div className="hole">
         {state.yourHoleCards ? (
-          state.yourHoleCards.map((c, i) => <CardView key={i} card={c} />)
+          state.yourHoleCards.map((c) => <CardView key={cardKey(c)} card={c} />)
         ) : (
           <span className="muted">spectating</span>
         )}
@@ -149,7 +184,7 @@ function Seat({
           {turn && secsLeft !== undefined ? ` · ${secsLeft}s` : ''}
         </div>
       </div>
-      {p.committed > 0 && <div className="bet">{p.committed}</div>}
+      {p.committed > 0 && <div className="bet" key={p.committed}>{p.committed}</div>}
     </div>
   );
 }
