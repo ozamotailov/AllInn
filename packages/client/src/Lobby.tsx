@@ -10,6 +10,7 @@ export function Lobby({
   onLeave,
   onSettle,
   onRebuy,
+  onStart,
 }: {
   state: RoomPublicState;
   meId: string;
@@ -18,9 +19,15 @@ export function Lobby({
   onLeave: () => void;
   onSettle: () => void;
   onRebuy: () => void;
+  onStart: () => void;
 }) {
   const { config } = state;
   const seated = state.seats.some((s) => s.userId === meId);
+  const isHost = meId === state.hostId;
+  const readyCount = state.seats.filter(
+    (s) => s.status !== 'empty' && s.stack > 0 && s.userId && state.presentUserIds.includes(s.userId),
+  ).length;
+  const manualStartReady = !config.autoStart && readyCount >= 2;
 
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -70,6 +77,14 @@ export function Lobby({
       {seated && state.seats.filter((s) => s.status !== 'empty').length < 2 && (
         <p className="muted small">Waiting for another player to sit…</p>
       )}
+      {manualStartReady &&
+        (isHost ? (
+          <button className="primary" onClick={onStart}>
+            Start hand
+          </button>
+        ) : (
+          <p className="muted small">Waiting for the host to start…</p>
+        ))}
       <p className="muted small">{state.presentUserIds.length} online</p>
 
       <div className="toolbar">

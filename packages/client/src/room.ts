@@ -43,6 +43,7 @@ interface RoomStore {
   rebuy: (amount: number) => void;
   requestLedger: () => void;
   clearLedger: () => void;
+  start: () => void;
   disconnect: () => void;
 }
 
@@ -144,6 +145,7 @@ export const useRoom = create<RoomStore>((set, get) => {
     rebuy: (amount) => get().socket?.send({ t: 'rebuy', amount }),
     requestLedger: () => get().socket?.send({ t: 'ledger' }),
     clearLedger: () => set({ ledger: undefined }),
+    start: () => get().socket?.send({ t: 'start' }),
     disconnect: () => {
       stopped = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);

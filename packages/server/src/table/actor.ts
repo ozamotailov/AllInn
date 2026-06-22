@@ -301,7 +301,26 @@ export class TableActor {
     this.afterHandProgress();
   }
 
+  /** Auto-start path (sit/attach/rebuy/intermission). No-op in manual mode. */
   private maybeStartHand(): void {
+    if (this.config.autoStart === false) return; // manual: host starts each hand
+    this.tryBeginHand();
+  }
+
+  /** Host pressed "Start hand" (used when autoStart is off). */
+  startByHost(userId: string): void {
+    if (userId !== this.hostId) {
+      this.connections.get(userId)?.send({
+        t: 'error',
+        code: 'not_host',
+        message: 'Only the host can start the hand',
+      });
+      return;
+    }
+    this.tryBeginHand();
+  }
+
+  private tryBeginHand(): void {
     if (this.phase !== 'lobby' || this.intermission) return;
     // Only connected seated players with chips — avoids looping hands in an
     // abandoned room (auto-fold would otherwise play it out forever).

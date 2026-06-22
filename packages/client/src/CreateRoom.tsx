@@ -76,6 +76,14 @@ export function CreateRoom({
           onChange={(e) => setCfg({ ...cfg, actionTimerSeconds: Number(e.target.value) })}
         />
       </label>
+      <label>
+        Auto-start at 2 players
+        <input
+          type="checkbox"
+          checked={cfg.autoStart}
+          onChange={(e) => setCfg({ ...cfg, autoStart: e.target.checked })}
+        />
+      </label>
 
       {error && <p className="error">{error}</p>}
       <button className="primary" onClick={submit} disabled={busy}>

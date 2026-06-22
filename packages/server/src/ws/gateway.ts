@@ -74,6 +74,8 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
             return actor.rebuy(userId, msg.amount);
           case 'ledger':
             return actor.sendLedger();
+          case 'start':
+            return actor.startByHost(userId);
           case 'ping':
             return send(ws, { t: 'pong' });
           default:

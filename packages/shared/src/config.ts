@@ -20,6 +20,8 @@ export interface RoomConfig {
   /** Seconds a player has to act before auto fold/check. */
   actionTimerSeconds: number;
   rebuy: RebuyPolicy;
+  /** Auto-deal when ≥2 are seated; if false, the host starts each hand. */
+  autoStart: boolean;
 }
 
 export const DEFAULT_CONFIG: RoomConfig = {
@@ -30,6 +32,7 @@ export const DEFAULT_CONFIG: RoomConfig = {
   maxPlayers: 6,
   actionTimerSeconds: 20,
   rebuy: { enabled: true },
+  autoStart: true,
 };
 
 /** Returns a list of human-readable validation errors (empty = valid). */

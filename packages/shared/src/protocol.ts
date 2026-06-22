@@ -15,6 +15,7 @@ export type ClientMessage =
   | { t: 'action'; intent: PlayerActionIntent }
   | { t: 'rebuy'; amount: number }
   | { t: 'ledger' }
+  | { t: 'start' }
   | { t: 'ping' };
 
 // ── Server → Client ──────────────────────────────────────────────────────────

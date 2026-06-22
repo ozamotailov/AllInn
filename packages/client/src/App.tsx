@@ -49,7 +49,7 @@ function Shell({ children }: { children: ReactNode }) {
 function RoomFlow({ token, userId }: { token: string; userId: string }) {
   const [code, setCode] = useState<string | undefined>(getStartParam());
   const [inviteLink, setInviteLink] = useState<string>();
-  const { conn, mode, room, table, result, ledger, error, connect, sit, leave, act, rebuy, requestLedger, clearLedger } =
+  const { conn, mode, room, table, result, ledger, error, connect, sit, leave, act, rebuy, requestLedger, clearLedger, start } =
     useRoom();
 
   useEffect(() => {
@@ -103,6 +103,7 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
           onLeave={leave}
           onSettle={requestLedger}
           onRebuy={() => rebuy(buyIn)}
+          onStart={start}
         />
         {overlay}
       </>
