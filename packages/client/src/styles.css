@@ -101,13 +101,17 @@ button.link:disabled { opacity: 0.4; }
 }
 
 .room-code {
+  display: inline-block; /* so vertical padding doesn't bleed onto the next line */
   font-size: 1.3rem;
   letter-spacing: 0.1em;
   padding: 6px 10px;
   border-radius: 8px;
   background: rgba(127, 127, 127, 0.15);
 }
-.invite { padding: 8px 0; }
+.invite { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 8px 0; }
+.invite-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.link-url { word-break: break-all; }
+.ghost.small { padding: 7px 11px; }
 
 /* lobby seat list */
 .seats { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }

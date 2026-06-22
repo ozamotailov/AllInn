@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { RoomPublicState } from '@allinn/shared';
-import { confirmDialog } from './telegram.js';
+import { confirmDialog, copyText } from './telegram.js';
 
 export function Lobby({
   state,
@@ -21,6 +22,14 @@ export function Lobby({
   const { config } = state;
   const seated = state.seats.some((s) => s.userId === meId);
 
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    if (await copyText(inviteLink || state.roomCode)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+
   return (
     <section className="card">
       <h2>Lobby</h2>
@@ -30,8 +39,14 @@ export function Lobby({
       </p>
 
       <div className="invite">
-        Room code: <code className="room-code">{state.roomCode}</code>
-        {inviteLink && <div className="muted small">{inviteLink}</div>}
+        <div className="muted small">Room code</div>
+        <div className="invite-row">
+          <code className="room-code">{state.roomCode}</code>
+          <button className="ghost small" onClick={copy}>
+            {copied ? 'Copied ✓' : inviteLink ? 'Copy link' : 'Copy code'}
+          </button>
+        </div>
+        {inviteLink && <div className="muted small link-url">{inviteLink}</div>}
       </div>
 
       <ul className="seats">
