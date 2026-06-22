@@ -16,6 +16,7 @@ export type ClientMessage =
   | { t: 'rebuy'; amount: number }
   | { t: 'ledger' }
   | { t: 'start' }
+  | { t: 'pause' }
   | { t: 'ping' };
 
 // ── Server → Client ──────────────────────────────────────────────────────────

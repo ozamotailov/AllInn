@@ -52,18 +52,24 @@ export function Table({
   state,
   result,
   actionSeconds,
+  isHost,
   onAct,
   onLeave,
   onSettle,
   onRebuy,
+  onStart,
+  onPause,
 }: {
   state: PersonalTableState;
   result?: HandResultView;
   actionSeconds: number;
+  isHost: boolean;
   onAct: (intent: PlayerActionIntent) => void;
   onLeave: () => void;
   onSettle: () => void;
   onRebuy: () => void;
+  onStart: () => void;
+  onPause: () => void;
 }) {
   const potTotal = state.pots.reduce((a, p) => a + p.amount, 0);
   const lm = state.yourLegalMoves;
@@ -157,6 +163,10 @@ export function Table({
         <p className="muted small mono center-text">🔒 {state.deckCommitment.slice(0, 10)}…</p>
       )}
 
+      {state.running === false && state.street !== 'showdown' && (
+        <p className="muted small center-text">⏸ Pausing after this hand…</p>
+      )}
+
       {result && <ResultBanner result={result} />}
 
       {lm ? (
@@ -170,6 +180,12 @@ export function Table({
       ) : (
         <div className="toolbar">
           <span className="muted small waiting">Waiting…</span>
+          {isHost &&
+            (state.running ? (
+              <button className="ghost" onClick={onPause}>⏸ Pause</button>
+            ) : (
+              <button className="ghost" onClick={onStart}>▶ Resume</button>
+            ))}
           <button className="ghost" onClick={onSettle}>Settle up</button>
           <button className="ghost" onClick={onRebuy}>Rebuy</button>
           <button

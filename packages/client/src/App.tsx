@@ -49,7 +49,7 @@ function Shell({ children }: { children: ReactNode }) {
 function RoomFlow({ token, userId }: { token: string; userId: string }) {
   const [code, setCode] = useState<string | undefined>(getStartParam());
   const [inviteLink, setInviteLink] = useState<string>();
-  const { conn, mode, room, table, result, ledger, error, connect, sit, leave, act, rebuy, requestLedger, clearLedger, start } =
+  const { conn, mode, room, table, result, ledger, error, connect, sit, leave, act, rebuy, requestLedger, clearLedger, start, pause } =
     useRoom();
 
   useEffect(() => {
@@ -70,6 +70,7 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
   if (conn === 'error') return <p className="error">Room error: {error}</p>;
 
   const buyIn = room?.config.startingStack ?? 0;
+  const isHost = room?.hostId === userId;
   const overlay = ledger ? <Ledger ledger={ledger} onClose={clearLedger} /> : null;
   const banner =
     conn === 'connecting' && (table || room) ? <div className="reconn">reconnecting…</div> : null;
@@ -82,10 +83,13 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
           state={table}
           result={result}
           actionSeconds={room?.config.actionTimerSeconds ?? 20}
+          isHost={isHost}
           onAct={act}
           onLeave={leave}
           onSettle={requestLedger}
           onRebuy={() => rebuy(buyIn)}
+          onStart={start}
+          onPause={pause}
         />
         {overlay}
       </>
@@ -104,6 +108,7 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
           onSettle={requestLedger}
           onRebuy={() => rebuy(buyIn)}
           onStart={start}
+          onPause={pause}
         />
         {overlay}
       </>

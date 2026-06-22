@@ -49,6 +49,8 @@ export class TableActor {
   private handNonce = 0;
   private fairness?: FairnessReveal;
   private lastActivityAt = Date.now();
+  /** Whether the game is actively dealing hands (host can pause/resume). */
+  private running = true;
   /** Final net of players who left the table mid-session, kept for the ledger. */
   private departed: DepartedEntry[] = [];
   /** Set by the registry to persist between-hand state after each change. */
@@ -74,6 +76,8 @@ export class TableActor {
         status: 'empty',
       }));
     }
+    // autoStart rooms run immediately; manual rooms wait for the host to start.
+    this.running = config.autoStart !== false;
   }
 
   /** Between-hand state for persistence. */
@@ -301,23 +305,35 @@ export class TableActor {
     this.afterHandProgress();
   }
 
-  /** Auto-start path (sit/attach/rebuy/intermission). No-op in manual mode. */
+  /** Deal the next hand if the game is running (sit/attach/rebuy/intermission). */
   private maybeStartHand(): void {
-    if (this.config.autoStart === false) return; // manual: host starts each hand
+    if (!this.running) return; // not started yet, or paused
     this.tryBeginHand();
   }
 
-  /** Host pressed "Start hand" (used when autoStart is off). */
+  /** Host starts/resumes the game; it then runs continuously until paused. */
   startByHost(userId: string): void {
-    if (userId !== this.hostId) {
-      this.connections.get(userId)?.send({
-        t: 'error',
-        code: 'not_host',
-        message: 'Only the host can start the hand',
-      });
-      return;
-    }
+    if (!this.requireHost(userId)) return;
+    this.running = true;
     this.tryBeginHand();
+    if (this.phase === 'lobby') this.broadcast(); // reflect running even if <2 ready
+  }
+
+  /** Host pauses: the current hand finishes, then the game stops until resumed. */
+  pauseByHost(userId: string): void {
+    if (!this.requireHost(userId)) return;
+    this.running = false;
+    this.broadcast();
+  }
+
+  private requireHost(userId: string): boolean {
+    if (userId === this.hostId) return true;
+    this.connections.get(userId)?.send({
+      t: 'error',
+      code: 'not_host',
+      message: 'Only the host can control the game',
+    });
+    return false;
   }
 
   private tryBeginHand(): void {
@@ -415,6 +431,7 @@ export class TableActor {
       config: this.config,
       seats: this.seats.map((s) => ({ ...s })),
       presentUserIds: [...this.connections.keys()],
+      running: this.running,
     };
   }
 
@@ -423,6 +440,7 @@ export class TableActor {
       const state = this.hand.personalState(conn.userId, this.roomCode);
       state.actionDeadline = this.actionDeadline;
       state.deckCommitment = this.fairness?.commitment;
+      state.running = this.running;
       conn.send({ t: 'state', state });
     } else {
       conn.send({ t: 'room', state: this.snapshot() });

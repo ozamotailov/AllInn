@@ -49,6 +49,8 @@ export interface PublicTableState {
   actionDeadline?: number;
   /** sha256(serverSeed) committed before the deal; revealed in handResult. */
   deckCommitment?: string;
+  /** Whether the game is dealing hands (false = paused/not started). */
+  running?: boolean;
 }
 
 /** The legal actions for the player to act, as raise-to totals for this street. */
@@ -96,4 +98,6 @@ export interface RoomPublicState {
   seats: SeatState[];
   /** userIds currently connected to the room (seated or just watching). */
   presentUserIds: string[];
+  /** Whether the game is dealing hands (false = paused/not started). */
+  running: boolean;
 }

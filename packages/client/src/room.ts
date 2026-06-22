@@ -44,6 +44,7 @@ interface RoomStore {
   requestLedger: () => void;
   clearLedger: () => void;
   start: () => void;
+  pause: () => void;
   disconnect: () => void;
 }
 
@@ -146,6 +147,7 @@ export const useRoom = create<RoomStore>((set, get) => {
     requestLedger: () => get().socket?.send({ t: 'ledger' }),
     clearLedger: () => set({ ledger: undefined }),
     start: () => get().socket?.send({ t: 'start' }),
+    pause: () => get().socket?.send({ t: 'pause' }),
     disconnect: () => {
       stopped = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);

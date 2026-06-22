@@ -76,6 +76,8 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
             return actor.sendLedger();
           case 'start':
             return actor.startByHost(userId);
+          case 'pause':
+            return actor.pauseByHost(userId);
           case 'ping':
             return send(ws, { t: 'pong' });
           default:
