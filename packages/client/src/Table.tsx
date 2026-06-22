@@ -45,6 +45,7 @@ interface FlyChip {
   id: number;
   left: string;
   top: string;
+  delay: number;
 }
 
 export function Table({
@@ -82,7 +83,18 @@ export function Table({
       const before = prevBets.current[p.seat] ?? 0;
       if (p.committed > before) {
         const pos = seatPos(j, myIndex, n);
-        spawned.push({ id: ++chipId.current, left: pos.left, top: pos.top });
+        const delta = p.committed - before;
+        const count = Math.min(4, 1 + Math.floor(delta / 12)); // bigger bet → more chips
+        for (let k = 0; k < count; k++) {
+          const jx = (Math.random() * 12 - 6).toFixed(1);
+          const jy = (Math.random() * 12 - 6).toFixed(1);
+          spawned.push({
+            id: ++chipId.current,
+            left: `calc(${pos.left} + ${jx}px)`,
+            top: `calc(${pos.top} + ${jy}px)`,
+            delay: k * 70,
+          });
+        }
       }
       prevBets.current[p.seat] = p.committed;
     });
@@ -127,7 +139,7 @@ export function Table({
           <div
             key={c.id}
             className="flychip"
-            style={{ '--fx': c.left, '--fy': c.top } as unknown as CSSProperties}
+            style={{ '--fx': c.left, '--fy': c.top, animationDelay: `${c.delay}ms` } as unknown as CSSProperties}
             onAnimationEnd={() => setChips((cs) => cs.filter((x) => x.id !== c.id))}
           />
         ))}

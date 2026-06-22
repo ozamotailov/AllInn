@@ -257,7 +257,8 @@ button.link:disabled { opacity: 0.4; }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   z-index: 5;
-  animation: flychip 0.5s ease-in forwards;
+  /* `both` so a staggered (delayed) chip stays at its seat start during the delay */
+  animation: flychip 0.5s ease-in both;
 }
 
 @keyframes turnglow {

@@ -24,7 +24,8 @@ import type {
 import { HandMachine, computeLedger, simplifyDebts, seededRandomInt, deckSeedString } from '@allinn/shared';
 import type { RoomSnapshot, DepartedEntry } from '../store/types.js';
 
-const INTERMISSION_MS = 4000;
+const SHOWDOWN_INTERMISSION_MS = 6000; // linger so players can read the reveal
+const FOLD_INTERMISSION_MS = 3500; // shorter when nobody showed cards
 
 export interface Connection {
   userId: string;
@@ -359,10 +360,12 @@ export class TableActor {
     const result = this.hand.result();
     this.broadcast(); // final hand state (showdown board + stacks)
     this.broadcastResult(result.board, result.showdown, this.fairness, result.payouts);
-    this.scheduleIntermission();
+    this.scheduleIntermission(
+      result.showdown.length > 0 ? SHOWDOWN_INTERMISSION_MS : FOLD_INTERMISSION_MS,
+    );
   }
 
-  private scheduleIntermission(): void {
+  private scheduleIntermission(ms: number): void {
     if (this.intermission) return;
     this.intermission = setTimeout(() => {
       this.intermission = undefined;
@@ -370,7 +373,7 @@ export class TableActor {
       this.phase = 'lobby';
       this.broadcast();
       this.maybeStartHand();
-    }, INTERMISSION_MS);
+    }, ms);
   }
 
   private nextButton(seatNumbers: number[]): number {
