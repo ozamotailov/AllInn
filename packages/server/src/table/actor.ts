@@ -53,8 +53,9 @@ export class TableActor {
   private running = true;
   /** Final net of players who left the table mid-session, kept for the ledger. */
   private departed: DepartedEntry[] = [];
-  /** userIds who pressed Leave during a hand — vacated when the hand ends. */
-  private readonly leaving = new Set<string>();
+  /** userIds who left mid-hand: vacated immediately, shown the lobby (they can
+   *  still view Settle up / re-sit). Cleared when the next intermission ends. */
+  private readonly spectators = new Set<string>();
   /** Set by the registry to persist between-hand state after each change. */
   onPersist?: () => void;
   /** Optional logger (set by the registry) for hand lifecycle diagnostics. */
@@ -147,6 +148,7 @@ export class TableActor {
 
   sit(userId: string, displayName: string, seat: number): SitResult {
     this.touch();
+    this.spectators.delete(userId);
     if (this.phase !== 'lobby') return { ok: false, error: 'Cannot sit during a hand' };
     if (seat < 0 || seat >= this.seats.length) return { ok: false, error: 'Invalid seat' };
     if (this.seats.some((s) => s.userId === userId)) return { ok: false, error: 'Already seated' };
@@ -167,11 +169,27 @@ export class TableActor {
   leave(userId: string): void {
     this.touch();
     if (this.handActive()) {
-      // Fold their hand now (even out of turn) and vacate their seat at hand end.
+      // Fold them now (even out of turn), vacate immediately, and show them the
+      // lobby while the others play on. Their net is recorded for the ledger.
       const seat = this.seatOf(userId);
-      if (seat !== undefined) {
-        this.leaving.add(userId);
+      const actorSeat = this.seats.find((s) => s.userId === userId);
+      if (seat !== undefined && actorSeat) {
         this.hand!.forfeit(seat);
+        const stack = this.hand!.finalStacks().find((x) => x.seat === seat)?.stack ?? actorSeat.stack;
+        if (actorSeat.buyIn > 0) {
+          this.departed.push({
+            userId,
+            displayName: actorSeat.displayName as string,
+            buyIn: actorSeat.buyIn,
+            stack,
+          });
+        }
+        actorSeat.userId = undefined;
+        actorSeat.displayName = undefined;
+        actorSeat.stack = 0;
+        actorSeat.buyIn = 0;
+        actorSeat.status = 'empty';
+        this.spectators.add(userId);
         this.afterHandProgress();
       }
       return;
@@ -400,25 +418,6 @@ export class TableActor {
       const seat = this.seats.find((s) => s.seat === fs.seat);
       if (seat) seat.stack = fs.stack;
     }
-    // Remove players who left during the hand (record their net for the ledger).
-    for (const userId of this.leaving) {
-      const seat = this.seats.find((s) => s.userId === userId);
-      if (!seat) continue;
-      if (seat.buyIn > 0) {
-        this.departed.push({
-          userId,
-          displayName: seat.displayName as string,
-          buyIn: seat.buyIn,
-          stack: seat.stack,
-        });
-      }
-      seat.userId = undefined;
-      seat.displayName = undefined;
-      seat.stack = 0;
-      seat.buyIn = 0;
-      seat.status = 'empty';
-    }
-    this.leaving.clear();
     this.persist();
     const result = this.hand.result();
     this.broadcast(); // final hand state (showdown board + stacks)
@@ -434,6 +433,7 @@ export class TableActor {
       this.intermission = undefined;
       this.hand = undefined;
       this.phase = 'lobby';
+      this.spectators.clear(); // back to lobby for everyone
       this.broadcast();
       this.maybeStartHand();
     }, ms);
@@ -464,7 +464,7 @@ export class TableActor {
   }
 
   private sendStateTo(conn: Connection): void {
-    if (this.phase === 'playing' && this.hand) {
+    if (this.phase === 'playing' && this.hand && !this.spectators.has(conn.userId)) {
       const state = this.hand.personalState(conn.userId, this.roomCode);
       state.actionDeadline = this.actionDeadline;
       state.deckCommitment = this.fairness?.commitment;

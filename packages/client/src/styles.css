@@ -271,6 +271,16 @@ button.link:disabled { opacity: 0.4; }
   50%      { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(231, 194, 92, 0.95); }
 }
 .pseat.turn .avatar { animation: turnglow 1.2s ease-in-out infinite; }
+/* Frame the whole pod of the player to act — clear even for folded spectators. */
+@keyframes turnframe {
+  0%, 100% { box-shadow: 0 0 0 2px var(--gold), 0 0 8px rgba(231, 194, 92, 0.45); }
+  50%      { box-shadow: 0 0 0 2px var(--gold), 0 0 18px rgba(231, 194, 92, 0.9); }
+}
+.pseat.turn {
+  border-radius: 12px;
+  background: rgba(231, 194, 92, 0.1);
+  animation: turnframe 1.1s ease-in-out infinite;
+}
 
 /* Bet chips sit toward the pot (wrapper positions, inner chip animates). */
 .bet-pos { position: absolute; left: 50%; top: 50%; }

@@ -141,7 +141,11 @@ export const useRoom = create<RoomStore>((set, get) => {
       open();
     },
     sit: (seat) => get().socket?.send({ t: 'sit', seat, buyIn: 0 }),
-    leave: () => get().socket?.send({ t: 'leave' }),
+    leave: () => {
+      get().socket?.send({ t: 'leave' });
+      // Drop to the lobby immediately; the server confirms with a fresh snapshot.
+      set({ mode: 'lobby', table: undefined, result: undefined });
+    },
     act: (intent) => get().socket?.send({ t: 'action', intent }),
     rebuy: (amount) => get().socket?.send({ t: 'rebuy', amount }),
     requestLedger: () => get().socket?.send({ t: 'ledger' }),
