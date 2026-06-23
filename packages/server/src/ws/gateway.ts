@@ -73,7 +73,7 @@ export function createGateway(httpServer: Server, deps: GatewayDeps): WebSocketS
           case 'rebuy':
             return actor.rebuy(userId, msg.amount);
           case 'ledger':
-            return actor.sendLedger();
+            return actor.sendLedger(conn);
           case 'start':
             return actor.startByHost(userId);
           case 'pause':

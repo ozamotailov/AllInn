@@ -237,8 +237,8 @@ export class TableActor {
     this.maybeStartHand();
   }
 
-  /** Compute and broadcast the session ledger ("who pays whom"). */
-  sendLedger(): void {
+  /** Compute the session ledger ("who pays whom") and send it to one requester. */
+  sendLedger(requester: Connection): void {
     const entries = [
       ...this.seats
         .filter((s) => s.status === 'seated' && s.buyIn > 0)
@@ -262,8 +262,7 @@ export class TableActor {
     } catch {
       settlements = []; // unbalanced (shouldn't happen) — show rows without transfers
     }
-    const msg: ServerMessage = { t: 'ledger', rows, settlements };
-    for (const conn of this.connections.values()) conn.send(msg);
+    requester.send({ t: 'ledger', rows, settlements });
   }
 
   private handActive(): boolean {
