@@ -7,6 +7,7 @@ import { registerRoutes } from './http/routes.js';
 import { createGateway } from './ws/gateway.js';
 import { RoomRegistry } from './rooms/registry.js';
 import { SqliteRoomStore } from './store/sqlite.js';
+import { startBot } from './bot/bot.js';
 
 // Load packages/server/.env (if present) before reading config. Node 20.12+.
 try {
@@ -45,6 +46,9 @@ const start = async () => {
     }
     if (env.allowDevAuth) {
       app.log.warn('ALLOW_DEV_AUTH=true — POST /auth/dev is OPEN. Local development only!');
+    }
+    if (env.botPolling) {
+      startBot(env, app.log);
     }
   } catch (err) {
     app.log.error(err);

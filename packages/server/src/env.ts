@@ -18,6 +18,10 @@ export interface Env {
   roomAbandonMinutes: number;
   /** Log non-secret diagnostics when initData validation fails. */
   authDebug: boolean;
+  /** Run the Telegram bot (long-polling) that answers /start with a welcome. */
+  botPolling: boolean;
+  /** Public HTTPS URL of the Mini App — used for the /start launch button. */
+  miniAppUrl: string;
 }
 
 export function loadEnv(): Env {
@@ -32,6 +36,8 @@ export function loadEnv(): Env {
     roomTtlMinutes: Number(process.env.ROOM_TTL_MINUTES ?? 30),
     roomAbandonMinutes: Number(process.env.ROOM_ABANDON_MINUTES ?? 720),
     authDebug: process.env.AUTH_DEBUG === 'true',
+    botPolling: process.env.BOT_POLLING === 'true',
+    miniAppUrl: process.env.MINI_APP_URL ?? '',
   };
 }
 
@@ -46,4 +52,14 @@ export function inviteLinkFor(code: string, env: Env): string {
   return env.appShortName
     ? `https://t.me/${env.botUsername}/${env.appShortName}?startapp=${code}`
     : `https://t.me/${env.botUsername}?startapp=${code}`;
+}
+
+/**
+ * A t.me link that opens the app fresh (no room) — only for a NAMED Direct Mini
+ * App. The main menu-button app has no such link, so prefer MINI_APP_URL
+ * (a web_app button) there. Returns '' when neither applies.
+ */
+export function appLinkFor(env: Env): string {
+  if (!env.botUsername || !env.appShortName) return '';
+  return `https://t.me/${env.botUsername}/${env.appShortName}`;
 }
