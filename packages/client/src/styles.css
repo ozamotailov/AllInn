@@ -218,7 +218,9 @@ button.link:disabled { opacity: 0.4; }
   border-radius: 8px; padding: 1px 7px;
 }
 
-.hole { display: flex; gap: 6px; justify-content: center; }
+/* Extra top margin: the bottom seat's name/stack panel overhangs the round
+   felt edge, so push the hole cards clear of it. */
+.hole { display: flex; gap: 6px; justify-content: center; margin-top: 20px; }
 .hole .playing-card { min-width: 46px; height: 64px; font-size: 1.05rem; }
 
 /* ── Animations ── */
