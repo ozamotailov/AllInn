@@ -53,6 +53,8 @@ export class TableActor {
   private running = true;
   /** Final net of players who left the table mid-session, kept for the ledger. */
   private departed: DepartedEntry[] = [];
+  /** userIds who pressed Leave during a hand — vacated when the hand ends. */
+  private readonly leaving = new Set<string>();
   /** Set by the registry to persist between-hand state after each change. */
   onPersist?: () => void;
   /** Optional logger (set by the registry) for hand lifecycle diagnostics. */
@@ -164,11 +166,12 @@ export class TableActor {
 
   leave(userId: string): void {
     this.touch();
-    if (this.phase === 'playing' && this.hand) {
-      // Mid-hand: only meaningful if it's their turn → treat as a fold.
+    if (this.handActive()) {
+      // Fold their hand now (even out of turn) and vacate their seat at hand end.
       const seat = this.seatOf(userId);
-      if (seat !== undefined && this.hand.toActSeat === seat) {
-        this.hand.applyAction(seat, { type: 'fold' });
+      if (seat !== undefined) {
+        this.leaving.add(userId);
+        this.hand!.forfeit(seat);
         this.afterHandProgress();
       }
       return;
@@ -397,6 +400,25 @@ export class TableActor {
       const seat = this.seats.find((s) => s.seat === fs.seat);
       if (seat) seat.stack = fs.stack;
     }
+    // Remove players who left during the hand (record their net for the ledger).
+    for (const userId of this.leaving) {
+      const seat = this.seats.find((s) => s.userId === userId);
+      if (!seat) continue;
+      if (seat.buyIn > 0) {
+        this.departed.push({
+          userId,
+          displayName: seat.displayName as string,
+          buyIn: seat.buyIn,
+          stack: seat.stack,
+        });
+      }
+      seat.userId = undefined;
+      seat.displayName = undefined;
+      seat.stack = 0;
+      seat.buyIn = 0;
+      seat.status = 'empty';
+    }
+    this.leaving.clear();
     this.persist();
     const result = this.hand.result();
     this.broadcast(); // final hand state (showdown board + stacks)

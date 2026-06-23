@@ -92,3 +92,36 @@ test('random playouts: chips conserved and hand always completes (500 seeds)', (
     assert.equal(after, before, `chips not conserved (seed ${seed})`);
   }
 });
+
+function driveCheckCall(hm: HandMachine): void {
+  let guard = 0;
+  while (!hm.isComplete() && guard++ < 100) {
+    const seat = hm.toActSeat;
+    if (seat === undefined) break;
+    const lm = hm.legalMoves();
+    if (!lm) break;
+    hm.applyAction(seat, lm.canCheck ? { type: 'check' } : { type: 'call' });
+  }
+}
+
+test('forfeit out of turn ends the hand uncontested (heads-up)', () => {
+  const hm = new HandMachine(cfg(1, 2), players([100, 100]), 0, () => 0);
+  hm.start(); // toAct = seat 0
+  hm.forfeit(1); // seat 1 leaves out of turn
+  assert.ok(hm.isComplete());
+  const stacks = hm.finalStacks();
+  assert.equal(stacks.find((s) => s.seat === 0)!.stack, 102); // won SB+BB
+  assert.equal(stacks.find((s) => s.seat === 1)!.stack, 98);
+  assert.equal(stacks[0].stack + stacks[1].stack, 200);
+});
+
+test('forfeit out of turn keeps a 3-handed hand going; chips conserved', () => {
+  const hm = new HandMachine(cfg(1, 2), players([100, 100, 100]), 0, (m) => m - 1);
+  hm.start();
+  hm.forfeit(2); // a non-acting player leaves
+  assert.ok(!hm.isComplete()); // two players remain
+  driveCheckCall(hm);
+  assert.ok(hm.isComplete());
+  const total = hm.finalStacks().reduce((a, s) => a + s.stack, 0);
+  assert.equal(total, 300);
+});

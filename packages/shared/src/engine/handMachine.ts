@@ -172,6 +172,23 @@ export class HandMachine {
     return { ok: true };
   }
 
+  /** Fold a player out of turn (e.g. they left the table). Resolves the hand if
+   *  only one player remains, and advances the street if the round is now done. */
+  forfeit(seat: number): void {
+    if (this.complete) return;
+    const s = this.get(seat);
+    if (!s || s.status !== 'active') return;
+    s.status = 'folded';
+    s.acted = true;
+    if (seat === this.toAct) {
+      this.afterAction();
+    } else {
+      const live = this.seats.filter((x) => x.status !== 'folded');
+      if (live.length === 1) this.endUncontested(live[0]);
+      else if (this.roundComplete()) this.advanceStreet();
+    }
+  }
+
   // ── Internal flow ────────────────────────────────────────────────────────────
 
   private afterAction(): void {
