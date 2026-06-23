@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DEFAULT_CONFIG, validateConfig, type RoomConfig } from '@allinn/shared';
 import { createRoom } from './api.js';
+import { t } from './i18n.js';
 
 export function CreateRoom({
   token,
@@ -33,9 +34,9 @@ export function CreateRoom({
 
   return (
     <section className="card">
-      <h2>New table</h2>
+      <h2>{t('create.title')}</h2>
       <label>
-        Small blind
+        {t('create.smallBlind')}
         <input
           type="number"
           value={cfg.smallBlind}
@@ -43,7 +44,7 @@ export function CreateRoom({
         />
       </label>
       <label>
-        Big blind
+        {t('create.bigBlind')}
         <input
           type="number"
           value={cfg.bigBlind}
@@ -51,7 +52,7 @@ export function CreateRoom({
         />
       </label>
       <label>
-        Starting stack
+        {t('create.startingStack')}
         <input
           type="number"
           value={cfg.startingStack}
@@ -59,7 +60,7 @@ export function CreateRoom({
         />
       </label>
       <label>
-        Max players
+        {t('create.maxPlayers')}
         <input
           type="number"
           min={2}
@@ -69,7 +70,7 @@ export function CreateRoom({
         />
       </label>
       <label>
-        Action timer (s)
+        {t('create.actionTimer')}
         <input
           type="number"
           value={cfg.actionTimerSeconds}
@@ -77,7 +78,7 @@ export function CreateRoom({
         />
       </label>
       <label>
-        Auto-start at 2 players
+        {t('create.autoStart')}
         <input
           type="checkbox"
           checked={cfg.autoStart}
@@ -87,7 +88,7 @@ export function CreateRoom({
 
       {error && <p className="error">{error}</p>}
       <button className="primary" onClick={submit} disabled={busy}>
-        {busy ? 'Creating…' : 'Create room'}
+        {busy ? t('create.creating') : t('create.create')}
       </button>
     </section>
   );

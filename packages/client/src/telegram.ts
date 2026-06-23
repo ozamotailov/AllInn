@@ -9,7 +9,7 @@ interface HapticFeedback {
 
 interface TelegramWebApp {
   initData: string;
-  initDataUnsafe: { start_param?: string; user?: { id: number; first_name?: string } };
+  initDataUnsafe: { start_param?: string; user?: { id: number; first_name?: string; language_code?: string } };
   colorScheme: 'light' | 'dark';
   ready(): void;
   expand(): void;
@@ -119,4 +119,9 @@ export function getStartParam(): string | undefined {
 /** True when running inside the real Telegram client (vs. a plain browser tab). */
 export function isInsideTelegram(): boolean {
   return Boolean(webApp()?.initData);
+}
+
+/** The user's Telegram language code (e.g. "ru", "en-US"), if available. */
+export function getLanguageCode(): string | undefined {
+  return webApp()?.initDataUnsafe.user?.language_code;
 }

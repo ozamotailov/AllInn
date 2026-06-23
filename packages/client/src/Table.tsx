@@ -10,6 +10,7 @@ import type {
 } from '@allinn/shared';
 import { CardView } from './Card.js';
 import { haptic, confirmDialog } from './telegram.js';
+import { t, tHand } from './i18n.js';
 import type { HandResultView } from './room.js';
 
 function useCountdown(deadline?: number): number | undefined {
@@ -117,8 +118,8 @@ export function Table({
       <div className="felt">
         <div className="center">
           <div className="pot" key={potTotal}>
-            {potTotal > 0 ? `Pot ${potTotal}` : ' '}
-            <span className="muted small"> · {state.street}</span>
+            {potTotal > 0 ? t('table.pot', { n: potTotal }) : ' '}
+            <span className="muted small"> · {t(`street.${state.street}`)}</span>
           </div>
           <div className="board">
             {state.board.map((c) => <CardView key={cardKey(c)} card={c} />)}
@@ -155,7 +156,7 @@ export function Table({
         {state.yourHoleCards ? (
           state.yourHoleCards.map((c) => <CardView key={cardKey(c)} card={c} />)
         ) : (
-          <span className="muted">spectating</span>
+          <span className="muted">{t('table.spectating')}</span>
         )}
       </div>
 
@@ -164,7 +165,7 @@ export function Table({
       )}
 
       {state.running === false && state.street !== 'showdown' && (
-        <p className="muted small center-text">⏸ Pausing after this hand…</p>
+        <p className="muted small center-text">{t('table.pausing')}</p>
       )}
 
       {result && <ResultBanner result={result} />}
@@ -179,22 +180,22 @@ export function Table({
         />
       ) : (
         <div className="toolbar">
-          <span className="muted small waiting">Waiting…</span>
+          <span className="muted small waiting">{t('table.waiting')}</span>
           {isHost &&
             (state.running ? (
-              <button className="ghost" onClick={onPause}>⏸ Pause</button>
+              <button className="ghost" onClick={onPause}>{t('table.pause')}</button>
             ) : (
-              <button className="ghost" onClick={onStart}>▶ Resume</button>
+              <button className="ghost" onClick={onStart}>{t('table.resume')}</button>
             ))}
-          <button className="ghost" onClick={onSettle}>Settle up</button>
-          <button className="ghost" onClick={onRebuy}>Rebuy</button>
+          <button className="ghost" onClick={onSettle}>{t('common.settleUp')}</button>
+          <button className="ghost" onClick={onRebuy}>{t('common.rebuy')}</button>
           <button
             className="ghost"
             onClick={async () => {
-              if (await confirmDialog('Leave the table?')) onLeave();
+              if (await confirmDialog(t('confirm.leaveTable'))) onLeave();
             }}
           >
-            Leave
+            {t('common.leave')}
           </button>
         </div>
       )}
@@ -240,10 +241,10 @@ function Seat({
         {p.seat === state.buttonSeat && <span className="dealer">D</span>}
       </div>
       <div className="info">
-        <div className="nm">{p.displayName ?? '—'}{you ? ' (you)' : ''}</div>
+        <div className="nm">{p.displayName ?? '—'}{you ? ` ${t('common.you')}` : ''}</div>
         <div className="st">
-          {p.status === 'folded' ? 'folded' : p.status === 'allin' ? 'all-in' : p.stack}
-          {turn && secsLeft !== undefined ? ` · ${secsLeft}s` : ''}
+          {p.status === 'folded' ? t('seat.folded') : p.status === 'allin' ? t('seat.allin') : p.stack}
+          {turn && secsLeft !== undefined ? ` · ${t('common.seconds', { n: secsLeft })}` : ''}
         </div>
       </div>
       {p.committed > 0 && (
@@ -305,7 +306,7 @@ function ActionBar({
             />
             {hasRange && (
               <button type="button" className="ghost" onClick={() => setRaiseTo(lm.maxRaiseTo)}>
-                All-in
+                {t('act.allIn')}
               </button>
             )}
           </div>
@@ -313,17 +314,17 @@ function ActionBar({
       )}
       <div className="actions">
         {lm.canFold && (
-          <button className="act fold" onClick={() => onAct({ type: 'fold' })}>Fold</button>
+          <button className="act fold" onClick={() => onAct({ type: 'fold' })}>{t('act.fold')}</button>
         )}
         {lm.canCheck && (
-          <button className="act" onClick={() => onAct({ type: 'check' })}>Check</button>
+          <button className="act" onClick={() => onAct({ type: 'check' })}>{t('act.check')}</button>
         )}
         {lm.canCall && (
-          <button className="act" onClick={() => onAct({ type: 'call' })}>Call {lm.callAmount}</button>
+          <button className="act" onClick={() => onAct({ type: 'call' })}>{t('act.call', { n: lm.callAmount })}</button>
         )}
         {lm.canRaise && (
           <button className="act raise" onClick={() => onAct({ type: lm.canCheck ? 'bet' : 'raise', amount: clamped })}>
-            {lm.canCheck ? 'Bet' : 'Raise'} {clamped}
+            {lm.canCheck ? t('act.bet', { n: clamped }) : t('act.raise', { n: clamped })}
           </button>
         )}
       </div>
@@ -334,15 +335,15 @@ function ActionBar({
 function ResultBanner({ result }: { result: HandResultView }) {
   return (
     <div className="result">
-      <strong>Hand result</strong>
+      <strong>{t('table.handResult')}</strong>
       <ul>
         {result.showdown.length === 0 ? (
-          <li>Won uncontested</li>
+          <li>{t('table.wonUncontested')}</li>
         ) : (
           result.showdown.map((e) => (
             <li key={e.seat}>
-              {e.handName}
-              {e.won > 0 ? ` — won ${e.won}` : ''}
+              {tHand(e.handName)}
+              {e.won > 0 ? ` ${t('table.won', { n: e.won })}` : ''}
             </li>
           ))
         )}
@@ -362,11 +363,11 @@ function Fairness({ reveal, board }: { reveal: FairnessReveal; board: Card[] }) 
   return (
     <div className="fairness">
       {status === 'idle' && (
-        <button className="link" onClick={verify}>Verify deck (provably fair)</button>
+        <button className="link" onClick={verify}>{t('fair.verify')}</button>
       )}
-      {status === 'checking' && <span className="muted small">checking…</span>}
-      {status === 'ok' && <span className="ok small">✓ deck committed before the deal, unaltered</span>}
-      {status === 'bad' && <span className="error small">✗ verification failed</span>}
+      {status === 'checking' && <span className="muted small">{t('fair.checking')}</span>}
+      {status === 'ok' && <span className="ok small">{t('fair.ok')}</span>}
+      {status === 'bad' && <span className="error small">{t('fair.bad')}</span>}
     </div>
   );
 }

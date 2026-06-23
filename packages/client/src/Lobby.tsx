@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { RoomPublicState } from '@allinn/shared';
 import { confirmDialog, copyText } from './telegram.js';
+import { t } from './i18n.js';
 
 export function Lobby({
   state,
@@ -41,18 +42,23 @@ export function Lobby({
 
   return (
     <section className="card">
-      <h2>Lobby</h2>
+      <h2>{t('lobby.title')}</h2>
       <p className="muted">
-        {config.smallBlind}/{config.bigBlind} · stack {config.startingStack} ·{' '}
-        {config.maxPlayers}-max · {config.actionTimerSeconds}s
+        {t('lobby.config', {
+          sb: config.smallBlind,
+          bb: config.bigBlind,
+          stack: config.startingStack,
+          max: config.maxPlayers,
+          timer: config.actionTimerSeconds,
+        })}
       </p>
 
       <div className="invite">
-        <div className="muted small">Room code</div>
+        <div className="muted small">{t('lobby.roomCode')}</div>
         <div className="invite-row">
           <code className="room-code">{state.roomCode}</code>
           <button className="ghost small" onClick={copy}>
-            {copied ? 'Copied ✓' : inviteLink ? 'Copy link' : 'Copy code'}
+            {copied ? t('lobby.copied') : inviteLink ? t('lobby.copyLink') : t('lobby.copyCode')}
           </button>
         </div>
         {inviteLink && <div className="muted small link-url">{inviteLink}</div>}
@@ -64,12 +70,12 @@ export function Lobby({
             <span className="seat-no">#{s.seat + 1}</span>
             {s.status === 'empty' ? (
               <button className="link" onClick={() => onSit(s.seat)} disabled={seated}>
-                Sit here
+                {t('lobby.sitHere')}
               </button>
             ) : (
               <span>
                 {s.displayName}
-                {s.userId === meId ? ' (you)' : ''} — {s.stack}
+                {s.userId === meId ? ` ${t('common.you')}` : ''} — {s.stack}
               </span>
             )}
           </li>
@@ -77,41 +83,41 @@ export function Lobby({
       </ul>
 
       {seated && state.seats.filter((s) => s.status !== 'empty').length < 2 && (
-        <p className="muted small">Waiting for another player to sit…</p>
+        <p className="muted small">{t('lobby.waitingPlayer')}</p>
       )}
       {isHost ? (
         running ? (
           <button className="ghost" onClick={onPause}>
-            ⏸ Pause game
+            {t('lobby.pauseGame')}
           </button>
         ) : (
           readyCount >= 2 && (
             <button className="primary" onClick={onStart}>
-              ▶ Start game
+              {t('lobby.startGame')}
             </button>
           )
         )
       ) : (
-        !running && <p className="muted small">⏸ Game paused — waiting for the host…</p>
+        !running && <p className="muted small">{t('lobby.pausedWaitHost')}</p>
       )}
-      <p className="muted small">{state.presentUserIds.length} online</p>
+      <p className="muted small">{t('lobby.online', { n: state.presentUserIds.length })}</p>
 
       <div className="toolbar">
         <button className="ghost" onClick={onSettle}>
-          Settle up
+          {t('common.settleUp')}
         </button>
         {seated && (
           <>
             <button className="ghost" onClick={onRebuy}>
-              Rebuy +{config.startingStack}
+              {t('lobby.rebuy', { n: config.startingStack })}
             </button>
             <button
               className="ghost"
               onClick={async () => {
-                if (await confirmDialog('Leave your seat?')) onLeave();
+                if (await confirmDialog(t('confirm.leaveSeat'))) onLeave();
               }}
             >
-              Leave seat
+              {t('lobby.leaveSeat')}
             </button>
           </>
         )}

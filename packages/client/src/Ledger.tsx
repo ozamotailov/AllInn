@@ -1,18 +1,19 @@
 import type { LedgerView } from './room.js';
+import { t } from './i18n.js';
 
 export function Ledger({ ledger, onClose }: { ledger: LedgerView; onClose: () => void }) {
   return (
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <h2>Settle up</h2>
+        <h2>{t('common.settleUp')}</h2>
 
         <table className="ledger">
           <thead>
             <tr>
-              <th>Player</th>
-              <th>Buy-in</th>
-              <th>Stack</th>
-              <th>Net</th>
+              <th>{t('ledger.player')}</th>
+              <th>{t('ledger.buyIn')}</th>
+              <th>{t('ledger.stack')}</th>
+              <th>{t('ledger.net')}</th>
             </tr>
           </thead>
           <tbody>
@@ -30,9 +31,9 @@ export function Ledger({ ledger, onClose }: { ledger: LedgerView; onClose: () =>
           </tbody>
         </table>
 
-        <h3>Who pays whom</h3>
+        <h3>{t('ledger.whoPays')}</h3>
         {ledger.settlements.length === 0 ? (
-          <p className="muted">Everyone's even — nothing to settle.</p>
+          <p className="muted">{t('ledger.even')}</p>
         ) : (
           <ul className="transfers">
             {ledger.settlements.map((s, i) => (
@@ -44,7 +45,7 @@ export function Ledger({ ledger, onClose }: { ledger: LedgerView; onClose: () =>
         )}
 
         <button className="primary" onClick={onClose}>
-          Close
+          {t('common.close')}
         </button>
       </div>
     </div>

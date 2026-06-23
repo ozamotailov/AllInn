@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useSession } from './session.js';
 import { useRoom } from './room.js';
 import { getStartParam } from './telegram.js';
+import { t } from './i18n.js';
 import { CreateRoom } from './CreateRoom.js';
 import { Lobby } from './Lobby.js';
 import { Table } from './Table.js';
@@ -18,12 +19,12 @@ export function App() {
   }, [login]);
 
   if (status === 'idle' || status === 'loading') {
-    return <Shell><p className="muted">Signing in…</p></Shell>;
+    return <Shell><p className="muted">{t('auth.signingIn')}</p></Shell>;
   }
   if (status === 'error' || !user || !token) {
     return (
       <Shell>
-        <p className="error">Sign-in failed{error ? `: ${error}` : ''}</p>
+        <p className="error">{t('auth.failed')}{error ? `: ${error}` : ''}</p>
       </Shell>
     );
   }
@@ -67,13 +68,13 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
       />
     );
   }
-  if (conn === 'error') return <p className="error">Room error: {error}</p>;
+  if (conn === 'error') return <p className="error">{t('room.error', { error: error ?? '' })}</p>;
 
   const buyIn = room?.config.startingStack ?? 0;
   const isHost = room?.hostId === userId;
   const overlay = ledger ? <Ledger ledger={ledger} onClose={clearLedger} /> : null;
   const banner =
-    conn === 'connecting' && (table || room) ? <div className="reconn">reconnecting…</div> : null;
+    conn === 'connecting' && (table || room) ? <div className="reconn">{t('conn.reconnecting')}</div> : null;
 
   if (mode === 'table' && table) {
     return (
@@ -114,5 +115,5 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
       </>
     );
   }
-  return <p className="muted">Joining room {code}…</p>;
+  return <p className="muted">{t('room.joining', { code })}</p>;
 }
