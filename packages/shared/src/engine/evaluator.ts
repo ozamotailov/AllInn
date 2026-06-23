@@ -110,6 +110,28 @@ export function bestHand(hole: readonly [Card, Card], board: readonly Card[]): H
   return evaluate7([...hole, ...board]);
 }
 
+/** The exact 5 cards forming the best hand from hole + board (for highlighting). */
+export function bestFive(hole: readonly [Card, Card], board: readonly Card[]): Card[] {
+  const cards = [...hole, ...board];
+  if (cards.length <= 5) return [...cards];
+  let best: HandValue | undefined;
+  let bestCards: Card[] = [];
+  const n = cards.length;
+  for (let a = 0; a < n; a++)
+    for (let b = a + 1; b < n; b++)
+      for (let c = b + 1; c < n; c++)
+        for (let d = c + 1; d < n; d++)
+          for (let e = d + 1; e < n; e++) {
+            const five = [cards[a], cards[b], cards[c], cards[d], cards[e]];
+            const v = rank5(five);
+            if (!best || compareValue(v, best) > 0) {
+              best = v;
+              bestCards = five;
+            }
+          }
+  return bestCards;
+}
+
 export function handName(v: HandValue): string {
   return CATEGORY_NAMES[v.category];
 }

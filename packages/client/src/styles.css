@@ -176,6 +176,21 @@ button.link:disabled { opacity: 0.4; }
 .board { display: flex; gap: 5px; justify-content: center; }
 .board .playing-card { min-width: 30px; height: 42px; font-size: 0.85rem; }
 
+/* Showdown: spotlight the winning 5 cards, dim the rest. Use filter (not
+   opacity) — the deal animation pins opacity via its `both` fill. */
+.playing-card.dim { filter: brightness(0.42) grayscale(0.5); }
+.playing-card.hl {
+  box-shadow: 0 0 0 2px var(--gold), 0 0 10px rgba(231, 194, 92, 0.85);
+  position: relative; z-index: 1;
+}
+.showdown-label {
+  margin-top: 9px;
+  font-size: 0.84rem; line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.showdown-label strong { color: var(--gold); }
+.result-fair { text-align: center; }
+
 .pseat {
   position: absolute;
   transform: translate(-50%, -50%);

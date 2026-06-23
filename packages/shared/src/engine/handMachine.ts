@@ -9,7 +9,7 @@
 
 import { createDeck, shuffle } from '../cards.js';
 import { buildPots } from './pots.js';
-import { bestHand, compareValue, handName, type HandValue } from './evaluator.js';
+import { bestHand, bestFive, compareValue, handName, type HandValue } from './evaluator.js';
 import type { Card, RandomInt } from '../cards.js';
 import type { RoomConfig } from '../config.js';
 import type { PlayerActionIntent } from '../actions.js';
@@ -292,6 +292,7 @@ export class HandMachine {
         seat: s.seat,
         holeCards: s.hole as [Card, Card],
         handName: handName(values.get(s.seat) as HandValue),
+        best5: bestFive(s.hole as [Card, Card], this.board),
         won: payouts[s.seat] ?? 0,
       }));
     this.payouts = payouts;

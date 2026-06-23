@@ -80,6 +80,13 @@ export function Table({
   const n = players.length;
   const myIndex = Math.max(0, players.findIndex((p) => p.seat === state.yourSeat));
 
+  // At a contested showdown, highlight the winner's 5 cards and dim the rest.
+  const showdownHl = state.street === 'showdown' && !!result && result.showdown.length > 0;
+  const winners = showdownHl ? result!.showdown.filter((e) => e.won > 0) : [];
+  const winCards = new Set(winners.flatMap((e) => e.best5.map(cardKey)));
+  const cardState = (c: Card): { dim?: boolean; highlight?: boolean } =>
+    showdownHl ? (winCards.has(cardKey(c)) ? { highlight: true } : { dim: true }) : {};
+
   // Fly a gold chip from a seat to the pot whenever that seat's committed grows.
   const prevBets = useRef<Record<number, number>>({});
   const chipId = useRef(0);
@@ -122,11 +129,22 @@ export function Table({
             <span className="muted small"> · {t(`street.${state.street}`)}</span>
           </div>
           <div className="board">
-            {state.board.map((c) => <CardView key={cardKey(c)} card={c} />)}
+            {state.board.map((c) => <CardView key={cardKey(c)} card={c} {...cardState(c)} />)}
             {Array.from({ length: 5 - state.board.length }).map((_, i) => (
               <span key={`ph${i}`} className="playing-card placeholder" />
             ))}
           </div>
+          {showdownHl && winners.length > 0 && (
+            <div className="showdown-label">
+              {winners.map((e) => (
+                <div key={e.seat}>
+                  <strong>{players.find((p) => p.seat === e.seat)?.displayName ?? '—'}</strong>
+                  {' — '}
+                  {tHand(e.handName)}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {players.map((p, j) => (
@@ -137,6 +155,7 @@ export function Table({
             bet={betOffset(j, myIndex, n)}
             won={result?.payouts?.[p.seat] ?? 0}
             reveal={result?.showdown.find((e) => e.seat === p.seat)?.holeCards}
+            cardState={cardState}
             state={state}
             secsLeft={secsLeft}
           />
@@ -154,7 +173,7 @@ export function Table({
 
       <div className="hole">
         {state.yourHoleCards ? (
-          state.yourHoleCards.map((c) => <CardView key={cardKey(c)} card={c} />)
+          state.yourHoleCards.map((c) => <CardView key={cardKey(c)} card={c} {...cardState(c)} />)
         ) : (
           <span className="muted">{t('table.spectating')}</span>
         )}
@@ -168,7 +187,11 @@ export function Table({
         <p className="muted small center-text">{t('table.pausing')}</p>
       )}
 
-      {result && <ResultBanner result={result} />}
+      {result?.fairness && (
+        <div className="result-fair">
+          <Fairness reveal={result.fairness} board={result.board} />
+        </div>
+      )}
 
       {lm ? (
         <ActionBar
@@ -209,6 +232,7 @@ function Seat({
   bet,
   won,
   reveal,
+  cardState,
   state,
   secsLeft,
 }: {
@@ -217,6 +241,7 @@ function Seat({
   bet: { x: number; y: number };
   won: number;
   reveal?: [Card, Card];
+  cardState: (c: Card) => { dim?: boolean; highlight?: boolean };
   state: PersonalTableState;
   secsLeft?: number;
 }) {
@@ -232,8 +257,8 @@ function Seat({
       {winner && <div className="won">+{won}</div>}
       {reveal && !you && (
         <div className="reveal">
-          <CardView key={cardKey(reveal[0])} card={reveal[0]} />
-          <CardView key={cardKey(reveal[1])} card={reveal[1]} />
+          <CardView key={cardKey(reveal[0])} card={reveal[0]} {...cardState(reveal[0])} />
+          <CardView key={cardKey(reveal[1])} card={reveal[1]} {...cardState(reveal[1])} />
         </div>
       )}
       <div className="avatar">
@@ -328,27 +353,6 @@ function ActionBar({
           </button>
         )}
       </div>
-    </div>
-  );
-}
-
-function ResultBanner({ result }: { result: HandResultView }) {
-  return (
-    <div className="result">
-      <strong>{t('table.handResult')}</strong>
-      <ul>
-        {result.showdown.length === 0 ? (
-          <li>{t('table.wonUncontested')}</li>
-        ) : (
-          result.showdown.map((e) => (
-            <li key={e.seat}>
-              {tHand(e.handName)}
-              {e.won > 0 ? ` ${t('table.won', { n: e.won })}` : ''}
-            </li>
-          ))
-        )}
-      </ul>
-      {result.fairness && <Fairness reveal={result.fairness} board={result.board} />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Card, Rank, Suit } from '../cards.js';
-import { rank5, evaluate7, compareValue, bestHand } from './evaluator.js';
+import { rank5, evaluate7, compareValue, bestHand, bestFive } from './evaluator.js';
 
 function cards(s: string): Card[] {
   return s.split(' ').map((t) => ({ rank: t[0] as Rank, suit: t[1] as Suit }));
@@ -46,4 +46,16 @@ test('evaluate7 finds a straight using both hole and board', () => {
   const v = evaluate7(cards('9c 8d 7h 6s 5c 2h 2d'));
   assert.equal(v.category, 4);
   assert.equal(v.tiebreak[0], 9);
+});
+
+test('bestFive returns the 5 cards of the winning combination', () => {
+  const key = (c: Card) => `${c.rank}${c.suit}`;
+  // Nut flush in hearts; the 5 hearts should be chosen, not the off-suit kicker.
+  const five = bestFive(
+    [{ rank: 'A', suit: 'h' }, { rank: 'K', suit: 'd' }],
+    cards('Qh Jh 9h 2h 3c'),
+  );
+  assert.equal(five.length, 5);
+  const keys = new Set(five.map(key));
+  assert.deepEqual(keys, new Set(['Ah', 'Qh', 'Jh', '9h', '2h']));
 });

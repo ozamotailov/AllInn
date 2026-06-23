@@ -25,6 +25,8 @@ export interface ShowdownEntry {
   holeCards: [Card, Card];
   /** Human description, e.g. "Full House, Kings over Tens". */
   handName: string;
+  /** The 5 cards (from hole + board) that make this hand, for highlighting. */
+  best5: Card[];
   won: number;
 }
 
