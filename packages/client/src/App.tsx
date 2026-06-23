@@ -72,7 +72,7 @@ function RoomFlow({ token, userId }: { token: string; userId: string }) {
 
   const buyIn = room?.config.startingStack ?? 0;
   const isHost = room?.hostId === userId;
-  const overlay = ledger ? <Ledger ledger={ledger} onClose={clearLedger} /> : null;
+  const overlay = ledger ? <Ledger ledger={ledger} meId={userId} onClose={clearLedger} /> : null;
   const banner =
     conn === 'connecting' && (table || room) ? <div className="reconn">{t('conn.reconnecting')}</div> : null;
 

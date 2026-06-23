@@ -103,6 +103,10 @@ const D: Record<string, { en: string; ru: string }> = {
   'ledger.net': { en: 'Net', ru: 'Итог' },
   'ledger.whoPays': { en: 'Who pays whom', ru: 'Кто кому платит' },
   'ledger.even': { en: "Everyone's even — nothing to settle.", ru: 'Все при своих — рассчитываться не нужно.' },
+  'ledger.yourResult': { en: 'Your result', ru: 'Твой итог' },
+  'ledger.youReceive': { en: "You'll receive:", ru: 'Тебе переведут:' },
+  'ledger.youSend': { en: 'You need to send:', ru: 'Тебе нужно отправить:' },
+  'ledger.youEven': { en: "You're even — nothing to settle.", ru: 'Ты при своих — рассчитываться не нужно.' },
 
   // common
   'common.you': { en: '(you)', ru: '(вы)' },
