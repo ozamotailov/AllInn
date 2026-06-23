@@ -85,21 +85,19 @@ export function Lobby({
       {seated && state.seats.filter((s) => s.status !== 'empty').length < 2 && (
         <p className="muted small">{t('lobby.waitingPlayer')}</p>
       )}
-      {isHost ? (
-        running ? (
-          <button className="ghost" onClick={onPause}>
-            {t('lobby.pauseGame')}
-          </button>
-        ) : (
-          readyCount >= 2 && (
+      {isHost
+        ? // Start/Pause only once there's a game to run (≥2 players seated).
+          readyCount >= 2 &&
+          (running ? (
+            <button className="ghost" onClick={onPause}>
+              {t('lobby.pauseGame')}
+            </button>
+          ) : (
             <button className="primary" onClick={onStart}>
               {t('lobby.startGame')}
             </button>
-          )
-        )
-      ) : (
-        !running && <p className="muted small">{t('lobby.pausedWaitHost')}</p>
-      )}
+          ))
+        : !running && <p className="muted small">{t('lobby.pausedWaitHost')}</p>}
       <p className="muted small">{t('lobby.online', { n: state.presentUserIds.length })}</p>
 
       <div className="toolbar">
